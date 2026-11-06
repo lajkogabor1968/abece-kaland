@@ -33,7 +33,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 <div class="stats"><div class="stat">⏱️ Idő: <strong id="timer">00:00</strong></div><div class="stat">⭐ Pont: <strong id="points">0</strong></div><div class="stat">🏅 Sikeres villámkör: <strong id="rounds">0</strong></div><div class="stat">🚀 Legjobb idő: <strong id="best">–</strong></div></div>
 </section>
 <section class="panel" aria-label="Betűrendezés">
-<p class="instructions">👆 <strong>Feladat:</strong> koppints arra a betűre, amelyet következőnek szeretnél a sorba tenni! Az első választott betű az első helyre, a második a második helyre kerül, és így tovább. <strong>Nincs segítség és nincs látható megoldás.</strong></p>
+<p class="instructions" id="instructions">👆 Kattints a betűkre ábécésorrendben! <strong>Nincs előre megmutatott megoldás.</strong></p>
 <div class="boardtitle"><h2 id="boardTitle">🔤 A teljes magyar ábécé – összekeverve</h2><span class="hint">A többjegyű betűk egy-egy betűnek számítanak.</span></div>
 <p class="progress" id="progress" aria-live="polite">Sorba rendezve: 0 / 44</p>
 <h3 class="board-subheading">🟩 A kiválasztott betűk sorrendje</h3>
@@ -137,6 +137,13 @@ function loadRound(){
  $('stageNote').textContent=stage===1?'🏆 1. küldetés: rakd sorba mind a 44 betűt!': '⚡ '+(rounds+1)+'/7. kör · '+titles[kind]+'. A hetedik kör után véget ér a játék.';
  $('speedControls').classList.toggle('hidden',stage!==2||kind!=='letters');
  $('newGame').textContent=stage===1?'🎲 Teljes ábécé újrakeverése':'🎲 Kör újrakezdése';
+ $('instructions').textContent=stage===1?'👆 Válaszd ki a 44 betűt ábécésorrendben. A kiválasztott betűk zöldek maradnak, és csak ellenőrzéskor jelenik meg a hibajelzés.':
+ kind==='letters'?'👆 Kattints a betűkre ábécésorrendben!':
+ kind==='words'?'👆 Kattints a magyar szavakra ábécésorrendben! Az első választás az első helyre kerül.':
+ kind==='ly'?'👆 Minden szóban a j vagy az ly hiányzik. Koppints a megfelelő betűre!':
+ kind==='initial'?'👆 Egy betű hiányzik a szó ELEJÉRŐL. Válaszd ki a megfelelő betűt!':
+ '👆 Egy betű hiányzik a szó KÖZEPÉRŐL. Válaszd ki a megfelelő betűt!';
+
  $('inventory').textContent=chosen.length+' elem megjelenítve';
  render();if(quiz)renderMissing();clockStart();
  show(stage===1?'Kattints a betűkre a helyes ábécésorrendben!':
@@ -193,7 +200,6 @@ function finishRound(){
    show('🌟 Sikerült a(z) '+rounds+'. villámkör! Időd: '+fmt(elapsed)+' · +'+bonus+' pont.','win');
   }
  }
- render();
  render();
 }
 function check(){
