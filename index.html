@@ -18,7 +18,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 .speed-options label{font-weight:800}.phase-label{border-radius:999px;background:#e0f4ff;padding:6px 13px;font-weight:850}
 .tile{touch-action:none;cursor:pointer}.tile.selected{outline:4px solid #f6a300;outline-offset:2px}
 @media(max-width:600px){.tiles{gap:5px;padding:8px}.tile{min-width:39px;min-height:45px;padding:5px 6px;font-size:1.1rem}}
-</style></head><body><main>
+.tile.placed{border-color:#16a085!important;background:#dbfaef!important;box-shadow:inset 0 -3px 0 #8ad9be!important;cursor:default;opacity:.9}.tile.placed:after{content:"✓";font-size:.52em;margin-left:3px;color:#087b5c}.progress{font-size:1rem;font-weight:850;color:#6145bb;margin:7px 0 13px}.actions button:disabled{opacity:.45;cursor:not-allowed}</style></head><body><main>
 <header class="hero"><div class="mascot" aria-hidden="true">🦉📚🌈</div><h1>Ábécé-kaland</h1><p>Előbb rakd sorba a teljes magyar ábécét, aztán mutasd meg, milyen gyors vagy!</p></header>
 <section class="panel" aria-label="Játék">
 <div class="stage-note" id="stageNote">🏆 1. küldetés: rakd sorba mind a 44 betűt! A gyorsasági kihívás csak ezután nyílik meg.</div>
@@ -33,10 +33,11 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 <div class="stats"><div class="stat">⏱️ Idő: <strong id="timer">00:00</strong></div><div class="stat">⭐ Pont: <strong id="points">0</strong></div><div class="stat">🏅 Sikeres villámkör: <strong id="rounds">0</strong></div><div class="stat">🚀 Legjobb idő: <strong id="best">–</strong></div></div>
 </section>
 <section class="panel" aria-label="Betűrendezés">
-<p class="instructions">👆 <strong>Feladat:</strong> kattints az első betűre, majd a másodikra: helyet cserélnek! Egérrel vagy ujjal át is húzhatod őket egymás helyére. <strong>Nincs segítség és nincs látható megoldás.</strong></p>
+<p class="instructions">👆 <strong>Feladat:</strong> koppints arra a betűre, amelyet következőnek szeretnél a sorba tenni! Az első választott betű az első helyre, a második a második helyre kerül, és így tovább. <strong>Nincs segítség és nincs látható megoldás.</strong></p>
 <div class="boardtitle"><h2 id="boardTitle">🔤 A teljes magyar ábécé – összekeverve</h2><span class="hint">A többjegyű betűk egy-egy betűnek számítanak.</span></div>
+<p class="progress" id="progress" aria-live="polite">Sorba rendezve: 0 / 44</p>
 <div class="tiles" id="tiles" aria-label="Rendezhető betűk"></div>
-<div class="actions"><button class="primary" id="check">✅ Kész vagyok! Ellenőrzés</button><button class="secondary hidden" id="nextRound">⚡ Következő villámkör</button></div>
+<div class="actions"><button class="secondary" id="undo" disabled>↩️ Utolsó lépés visszavonása</button><button class="primary" id="check">✅ Kész vagyok! Ellenőrzés</button><button class="secondary hidden" id="nextRound">⚡ Következő villámkör</button></div>
 <div id="message" class="message" role="status" aria-live="polite">Rendezd ábécésorrendbe a betűket! ✨</div>
 </section>
 <footer class="foot">🌟 Tableten és számítógépen is működik. A megoldást a játék nem jeleníti meg. 🌟</footer>
@@ -44,7 +45,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 'use strict';
 const alphabet=['a','á','b','c','cs','d','dz','dzs','e','é','f','g','gy','h','i','í','j','k','l','ly','m','n','ny','o','ó','ö','ő','p','q','r','s','sz','t','ty','u','ú','ü','ű','v','w','x','y','z','zs'];
 const $=id=>document.getElementById(id), tiles=$('tiles');
-let stage=1,chosen=[],current=[],selected=-1,points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
+let stage=1,chosen=[],current=[],placed=0,history=[],points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
 const randomInt=n=>Math.floor(Math.random()*n);
 function shuffle(a){let v=[...a];for(let i=v.length-1;i>0;i--){let j=randomInt(i+1);[v[i],v[j]]=[v[j],v[i]]}return v;}
 function fmt(s){let m=Math.floor(s/60);return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
@@ -54,62 +55,50 @@ function show(t,kind=''){$('message').textContent=t;$('message').className='mess
 function render(){
  tiles.replaceChildren();
  current.forEach((letter,i)=>{
-   const b=document.createElement('button');
-   b.type='button';b.className='tile'+(selected===i?' selected':'');
-   b.textContent=letter;b.dataset.pos=String(i);
-   b.style.setProperty('--hue',String((i*39+230)%360));
-   b.setAttribute('aria-label',letter+' betű, '+(i+1)+'. hely');
-   b.setAttribute('aria-pressed',String(selected===i));
-   tiles.appendChild(b);
+  const b=document.createElement('button');
+  b.type='button';b.className='tile'+(i<placed?' placed':'');
+  b.textContent=letter;b.dataset.pos=String(i);
+  b.style.setProperty('--hue',String((i*39+230)%360));
+  b.disabled=i<placed||finished;
+  b.setAttribute('aria-label',letter+' betű'+(i<placed?', már elhelyezve':', választható'));
+  tiles.appendChild(b);
  });
+ $('progress').textContent='Sorba rendezve: '+placed+' / '+chosen.length;
+ $('undo').disabled=history.length===0||finished;
+ $('check').disabled=placed!==chosen.length||finished;
 }
-let gesture=null;
-tiles.addEventListener('pointerdown',e=>{
- const b=e.target.closest('.tile');
- if(!b||finished)return;
- gesture={id:e.pointerId,from:Number(b.dataset.pos),x:e.clientX,y:e.clientY,moved:false};
-});
-document.addEventListener('pointermove',e=>{
- if(gesture&&e.pointerId===gesture.id&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>10)gesture.moved=true;
-});
-document.addEventListener('pointerup',e=>{
- if(!gesture||gesture.id!==e.pointerId)return;
- const g=gesture;gesture=null;
- const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tile');
- if(g.moved){
-  if(target&&tiles.contains(target)){
-   const j=Number(target.dataset.pos);
-   if(j!==g.from)swap(g.from,j);
-   else show('Húzd a betűt egy MÁSIK betűre! 👆');
-  }else show('Húzd a betűt a betűtáblán belül egy másik betűre!');
- }else{
-  choose(g.from);
- }
- e.preventDefault();
-});
-document.addEventListener('pointercancel',()=>{gesture=null});
 tiles.addEventListener('click',e=>{
- if(e.detail!==0||finished)return;
- const b=e.target.closest('.tile');
- if(b)choose(Number(b.dataset.pos));
+ const b=e.target.closest('button.tile');
+ if(!b||!tiles.contains(b)||finished)return;
+ const i=Number(b.dataset.pos);
+ if(!Number.isInteger(i)||i<placed||i>=current.length)return;
+ history.push([...current]);
+ const [letter]=current.splice(i,1);
+ current.splice(placed,0,letter);
+ placed++;
+ render();
+ show('✅ '+letter.toUpperCase()+' a(z) '+placed+'. helyre került.'+(placed===chosen.length?' Az összes betűt elhelyezted, most ellenőrizd!':' Válaszd a következő betűt!'));
 });
-function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('✅ Sikeres csere! '+current[i].toUpperCase()+' és '+current[j].toUpperCase()+' új helyen van.');}
-function choose(i){if(finished)return;if(selected===-1){selected=i;render();show('✅ Kijelölt betű: '+current[i].toUpperCase()+' — most koppints arra a betűre, amellyel felcserélnéd!');}else if(selected===i){selected=-1;render();}else swap(selected,i);}
+function undo(){
+ if(finished||history.length===0)return;
+ current=history.pop();placed--;
+ render();show('↩️ Az utolsó lépést visszavontad. Válassz új betűt!');
+}
 function celebrate(){for(let i=0;i<45;i++){let e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ff61aa','#ffcc4f','#17c4ad','#7662e7','#55b6ff'][randomInt(5)];e.style.animationDelay=Math.random()*.65+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2400);}}
 function loadRound(){
  chosen=stage===1?[...alphabet]:shuffle(alphabet).slice(0,Number($('speedSize').value)).sort((a,b)=>alphabet.indexOf(a)-alphabet.indexOf(b));
  current=shuffle(chosen);if(current.every((v,i)=>v===chosen[i]))[current[0],current[1]]=[current[1],current[0]];
- selected=-1;finished=false;$('nextRound').classList.add('hidden');
+ placed=0;history=[];finished=false;$('nextRound').classList.add('hidden');
  $('phaseLabel').textContent=stage===1?'1. küldetés · Teljes ábécé':'2. küldetés · Villámkör';
  $('boardTitle').textContent=stage===1?'🔤 A teljes magyar ábécé – összekeverve':'⚡ Villámkör – rendezd a betűket!';
  $('stageNote').textContent=stage===1?'🏆 1. küldetés: rakd sorba mind a 44 betűt! A gyorsasági kihívás csak ezután nyílik meg.':'⚡ 2. küldetés: a következő betűcsoportot rendezd a lehető leggyorsabban! Minden kör új véletlen válogatás.';
  $('speedControls').classList.toggle('hidden',stage!==2);
  $('newGame').textContent=stage===1?'🎲 Teljes ábécé újrakeverése':'🎲 Új villámkör';
- render();clockStart();show(stage===1?'Rakd sorba a teljes ábécét! A játék nem árulja el a helyes betűket.':'Indult az idő! Rendezd sorba a betűket minél gyorsabban! ⏱️');
+ render();clockStart();show(stage===1?'Keresd meg az első betűt, kattints rá, és automatikusan előre kerül. Folytasd ugyanígy!':'Indult az idő! Kattints a betűkre a helyes ábécésorrendben! ⏱️');
 }
 function check(){
  if(finished)return;
- if(!current.every((v,i)=>v===chosen[i])){show('Még nem teljesen jó a sorrend. Nézd át, és próbáld újra! 💪','bad');return;}
+ if(placed!==chosen.length||!current.every((v,i)=>v===chosen[i])){show('Még nem teljesen jó a sorrend. Nézd át, és próbáld újra! 💪','bad');return;}
  clockStop();finished=true;celebrate();
  if(stage===1){
   points+=440;$('points').textContent=points;stage=2;
@@ -127,6 +116,7 @@ function check(){
  }
  render();
 }
+$('undo').addEventListener('click',undo);
 $('newGame').addEventListener('click',loadRound);
 $('speedSize').addEventListener('change',()=>{if(stage===2)loadRound();});
 $('nextRound').addEventListener('click',loadRound);
