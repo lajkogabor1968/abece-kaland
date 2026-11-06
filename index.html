@@ -16,7 +16,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 .stage-note{background:#fff3c7;border-radius:16px;padding:12px 16px;font-weight:750;margin-bottom:14px}
 .locked{opacity:.55}.speed-options{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .speed-options label{font-weight:800}.phase-label{border-radius:999px;background:#e0f4ff;padding:6px 13px;font-weight:850}
-.tile{touch-action:manipulation}
+.tile{touch-action:none;cursor:pointer}.tile.selected{outline:4px solid #f6a300;outline-offset:2px}
 @media(max-width:600px){.tiles{gap:5px;padding:8px}.tile{min-width:39px;min-height:45px;padding:5px 6px;font-size:1.1rem}}
 </style></head><body><main>
 <header class="hero"><div class="mascot" aria-hidden="true">🦉📚🌈</div><h1>Ábécé-kaland</h1><p>Előbb rakd sorba a teljes magyar ábécét, aztán mutasd meg, milyen gyors vagy!</p></header>
@@ -33,7 +33,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 <div class="stats"><div class="stat">⏱️ Idő: <strong id="timer">00:00</strong></div><div class="stat">⭐ Pont: <strong id="points">0</strong></div><div class="stat">🏅 Sikeres villámkör: <strong id="rounds">0</strong></div><div class="stat">🚀 Legjobb idő: <strong id="best">–</strong></div></div>
 </section>
 <section class="panel" aria-label="Betűrendezés">
-<p class="instructions">👆 <strong>Feladat:</strong> koppints két betűre, és helyet cserélnek! Számítógépen egérrel húzhatod is őket. <strong>Nincs segítség és nincs látható megoldás.</strong></p>
+<p class="instructions">👆 <strong>Feladat:</strong> kattints az első betűre, majd a másodikra: helyet cserélnek! Egérrel vagy ujjal át is húzhatod őket egymás helyére. <strong>Nincs segítség és nincs látható megoldás.</strong></p>
 <div class="boardtitle"><h2 id="boardTitle">🔤 A teljes magyar ábécé – összekeverve</h2><span class="hint">A többjegyű betűk egy-egy betűnek számítanak.</span></div>
 <div class="tiles" id="tiles" aria-label="Rendezhető betűk"></div>
 <div class="actions"><button class="primary" id="check">✅ Kész vagyok! Ellenőrzés</button><button class="secondary hidden" id="nextRound">⚡ Következő villámkör</button></div>
@@ -44,7 +44,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 'use strict';
 const alphabet=['a','á','b','c','cs','d','dz','dzs','e','é','f','g','gy','h','i','í','j','k','l','ly','m','n','ny','o','ó','ö','ő','p','q','r','s','sz','t','ty','u','ú','ü','ű','v','w','x','y','z','zs'];
 const $=id=>document.getElementById(id), tiles=$('tiles');
-let stage=1,chosen=[],current=[],selected=-1,dragStart=-1,points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
+let stage=1,chosen=[],current=[],selected=-1,dragStart=-1,pointer=null,ignoreClick=false,points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
 const randomInt=n=>Math.floor(Math.random()*n);
 function shuffle(a){let v=[...a];for(let i=v.length-1;i>0;i--){let j=randomInt(i+1);[v[i],v[j]]=[v[j],v[i]]}return v;}
 function fmt(s){let m=Math.floor(s/60);return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
@@ -55,16 +55,17 @@ function render(){
  tiles.replaceChildren();
  current.forEach((letter,i)=>{
   let b=document.createElement('button');b.type='button';b.className='tile'+(selected===i?' selected':'');
-  b.textContent=letter;b.style.setProperty('--hue',String((i*39+230)%360));b.draggable=!finished;
+  b.textContent=letter;b.style.setProperty('--hue',String((i*39+230)%360));b.draggable=false;b.dataset.pos=String(i);
   b.setAttribute('aria-label',letter+' betű, '+(i+1)+'. hely');b.setAttribute('aria-pressed',String(selected===i));
-  b.addEventListener('click',()=>choose(i));
-  b.addEventListener('dragstart',e=>{dragStart=i;b.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i))}});
-  b.addEventListener('dragover',e=>e.preventDefault());
-  b.addEventListener('drop',e=>{e.preventDefault();if(dragStart>=0&&dragStart!==i)swap(dragStart,i);dragStart=-1});
-  b.addEventListener('dragend',()=>{dragStart=-1;b.classList.remove('dragging')});tiles.appendChild(b);
+  b.addEventListener('click',()=>{if(ignoreClick){ignoreClick=false;return;}choose(i);});
+  b.addEventListener('pointerdown',e=>{if(finished)return;pointer={id:e.pointerId,from:i,x:e.clientX,y:e.clientY,moved:false};});
+  b.addEventListener('pointermove',e=>{if(pointer&&pointer.id===e.pointerId&&Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>12)pointer.moved=true;});
+  tiles.appendChild(b);
  });
 }
-function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('Folytasd a rendezést! 🧩');}
+document.addEventListener('pointerup',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pointer;pointer=null;if(!p.moved)return;let target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tile');if(target&&tiles.contains(target)){const j=Number(target.dataset.pos);if(j!==p.from){ignoreClick=true;swap(p.from,j);setTimeout(()=>{ignoreClick=false},0);}}});
+document.addEventListener('pointercancel',()=>pointer=null);
+function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('✅ A két betű helyet cserélt! Folytasd a rendezést! 🧩');}
 function choose(i){if(finished)return;if(selected===-1){selected=i;render();show('Válaszd ki a másik betűt a cseréhez! 👆');}else if(selected===i){selected=-1;render();}else swap(selected,i);}
 function celebrate(){for(let i=0;i<45;i++){let e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ff61aa','#ffcc4f','#17c4ad','#7662e7','#55b6ff'][randomInt(5)];e.style.animationDelay=Math.random()*.65+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2400);}}
 function loadRound(){
