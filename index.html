@@ -44,7 +44,7 @@ main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center
 'use strict';
 const alphabet=['a','á','b','c','cs','d','dz','dzs','e','é','f','g','gy','h','i','í','j','k','l','ly','m','n','ny','o','ó','ö','ő','p','q','r','s','sz','t','ty','u','ú','ü','ű','v','w','x','y','z','zs'];
 const $=id=>document.getElementById(id), tiles=$('tiles');
-let stage=1,chosen=[],current=[],selected=-1,dragStart=-1,pointer=null,ignoreClick=false,points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
+let stage=1,chosen=[],current=[],selected=-1,points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
 const randomInt=n=>Math.floor(Math.random()*n);
 function shuffle(a){let v=[...a];for(let i=v.length-1;i>0;i--){let j=randomInt(i+1);[v[i],v[j]]=[v[j],v[i]]}return v;}
 function fmt(s){let m=Math.floor(s/60);return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
@@ -54,20 +54,47 @@ function show(t,kind=''){$('message').textContent=t;$('message').className='mess
 function render(){
  tiles.replaceChildren();
  current.forEach((letter,i)=>{
-  let b=document.createElement('button');b.type='button';b.className='tile'+(selected===i?' selected':'');
-  b.textContent=letter;b.style.setProperty('--hue',String((i*39+230)%360));b.draggable=false;b.dataset.pos=String(i);
-  b.setAttribute('aria-label',letter+' betű, '+(i+1)+'. hely');b.setAttribute('aria-pressed',String(selected===i));
-  b.addEventListener('click',()=>{if(ignoreClick){ignoreClick=false;return;}choose(i);});
-  b.addEventListener('pointerdown',e=>{if(finished)return;pointer={id:e.pointerId,from:i,x:e.clientX,y:e.clientY,moved:false};});
-  b.addEventListener('pointermove',e=>{if(pointer&&pointer.id===e.pointerId&&Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>12)pointer.moved=true;});
-  tiles.appendChild(b);
+   const b=document.createElement('button');
+   b.type='button';b.className='tile'+(selected===i?' selected':'');
+   b.textContent=letter;b.dataset.pos=String(i);
+   b.style.setProperty('--hue',String((i*39+230)%360));
+   b.setAttribute('aria-label',letter+' betű, '+(i+1)+'. hely');
+   b.setAttribute('aria-pressed',String(selected===i));
+   tiles.appendChild(b);
  });
 }
-document.addEventListener('pointermove',e=>{if(pointer&&pointer.id===e.pointerId&&Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>12)pointer.moved=true;});
-document.addEventListener('pointerup',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pointer;pointer=null;if(!p.moved)return;let target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tile');if(target&&tiles.contains(target)){const j=Number(target.dataset.pos);if(j!==p.from){ignoreClick=true;swap(p.from,j);setTimeout(()=>{ignoreClick=false},0);}}});
-document.addEventListener('pointercancel',()=>pointer=null);
-function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('✅ A két betű helyet cserélt! Folytasd a rendezést! 🧩');}
-function choose(i){if(finished)return;if(selected===-1){selected=i;render();show('Válaszd ki a másik betűt a cseréhez! 👆');}else if(selected===i){selected=-1;render();}else swap(selected,i);}
+let gesture=null;
+tiles.addEventListener('pointerdown',e=>{
+ const b=e.target.closest('.tile');
+ if(!b||finished)return;
+ gesture={id:e.pointerId,from:Number(b.dataset.pos),x:e.clientX,y:e.clientY,moved:false};
+});
+document.addEventListener('pointermove',e=>{
+ if(gesture&&e.pointerId===gesture.id&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>10)gesture.moved=true;
+});
+document.addEventListener('pointerup',e=>{
+ if(!gesture||gesture.id!==e.pointerId)return;
+ const g=gesture;gesture=null;
+ const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tile');
+ if(g.moved){
+  if(target&&tiles.contains(target)){
+   const j=Number(target.dataset.pos);
+   if(j!==g.from)swap(g.from,j);
+   else show('Húzd a betűt egy MÁSIK betűre! 👆');
+  }else show('Húzd a betűt a betűtáblán belül egy másik betűre!');
+ }else{
+  choose(g.from);
+ }
+ e.preventDefault();
+});
+document.addEventListener('pointercancel',()=>{gesture=null});
+tiles.addEventListener('click',e=>{
+ if(e.detail!==0||finished)return;
+ const b=e.target.closest('.tile');
+ if(b)choose(Number(b.dataset.pos));
+});
+function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('✅ Sikeres csere! '+current[i].toUpperCase()+' és '+current[j].toUpperCase()+' új helyen van.');}
+function choose(i){if(finished)return;if(selected===-1){selected=i;render();show('✅ Kijelölt betű: '+current[i].toUpperCase()+' — most koppints arra a betűre, amellyel felcserélnéd!');}else if(selected===i){selected=-1;render();}else swap(selected,i);}
 function celebrate(){for(let i=0;i<45;i++){let e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ff61aa','#ffcc4f','#17c4ad','#7662e7','#55b6ff'][randomInt(5)];e.style.animationDelay=Math.random()*.65+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2400);}}
 function loadRound(){
  chosen=stage===1?[...alphabet]:shuffle(alphabet).slice(0,Number($('speedSize').value)).sort((a,b)=>alphabet.indexOf(a)-alphabet.indexOf(b));
