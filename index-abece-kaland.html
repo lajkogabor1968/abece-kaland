@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Ábécé-kaland – két küldetés</title><style>
+:root{--dark:#1d2a55;--violet:#6b45dc;--pink:#f54c9d;--teal:#0fa99f;--gold:#ffcb46;--paper:#fffdf9;--blue:#e8f5ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:var(--dark);background:radial-gradient(circle at 12% 8%,#ffe3f5 0,transparent 31%),radial-gradient(circle at 94% 7%,#cceeff 0,transparent 31%),linear-gradient(145deg,#e9e4ff,#d8f9f3 75%)}
+body:before{content:'✦  ✨  ★   ✦  ☀  ✨  ★';position:fixed;top:4px;left:3%;right:3%;text-align:center;opacity:.25;letter-spacing:clamp(6px,3vw,40px);pointer-events:none}
+main{max-width:1120px;margin:auto;padding:24px 16px 42px}.hero{text-align:center;padding:8px 6px 16px}.mascot{font-size:64px;filter:drop-shadow(0 5px 0 #ffffff90);line-height:1}.hero h1{font-size:clamp(2rem,5vw,3.8rem);margin:4px 0 2px;letter-spacing:-.06em;color:#4e38ad}.hero p{margin:4px auto 14px;max-width:690px;font-size:1.06rem}
+.panel{background:#ffffffeb;border:3px solid white;border-radius:28px;box-shadow:0 12px 30px #4b3b9d20;padding:clamp(14px,2.5vw,25px);margin-bottom:16px}.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between}.field{display:flex;flex-direction:column;gap:5px;min-width:220px;flex:1}.field label{font-weight:800;font-size:.9rem}select{border:2px solid #cbc2fb;background:white;border-radius:14px;padding:12px;font:inherit;font-weight:750;color:var(--dark)}button{font:inherit;cursor:pointer;touch-action:manipulation}.primary,.secondary{border:0;border-radius:15px;padding:12px 20px;font-weight:850;min-height:48px;box-shadow:0 4px 0 #0000001b}.primary{background:var(--violet);color:white}.primary:hover{background:#5934c6}.secondary{background:#fff1ba;color:#624308}.secondary:hover{background:#ffe37d}button:focus-visible,select:focus-visible{outline:4px solid #ff9b18;outline-offset:3px}
+.stats{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:14px 0 4px}.stat{border-radius:15px;padding:9px 14px;background:#f1efff;font-weight:800;min-width:130px;text-align:center}.stat strong{font-size:1.3rem;color:#5c37bd}.progress{height:13px;background:#e8e5f7;border-radius:15px;overflow:hidden;margin:14px 0 4px}.progress>div{height:100%;width:0;background:linear-gradient(90deg,#11c3ab,#ffc44d);transition:width .25s}
+.instructions{font-size:1.04rem;margin:2px 0 16px}.boardtitle{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:8px 0 11px}.boardtitle h2{margin:0;font-size:1.2rem}.hint{font-size:.83rem;color:#5a6384}
+.tiles{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;min-height:115px;align-content:center;padding:15px;border:3px dashed #b6a7f2;border-radius:21px;background:#f5f2ff}.tile{--hue:258;min-width:58px;min-height:58px;padding:7px 9px;display:grid;place-items:center;border:2px solid hsl(var(--hue) 70% 71%);border-bottom-width:5px;border-radius:14px;background:hsl(var(--hue) 95% 93%);color:#272156;font-size:clamp(1.22rem,2.7vw,1.65rem);font-weight:900;user-select:none;touch-action:manipulation;cursor:grab;position:relative;transition:transform .1s,background .15s}.tile:hover{transform:translateY(-2px)}.tile.selected{background:#ffe58a;border-color:#f39b00;box-shadow:0 0 0 4px #ffc52788;transform:translateY(-3px)}.tile.dragging{opacity:.35}.tile:focus-visible{outline:3px solid #ef6c00}.tile small{position:absolute;bottom:1px;right:5px;font-size:.55rem;color:#6d6688}
+.tile.correct{background:#b9f6d8;border-color:#27af72}.tile.wrong{background:#ffd4d9;border-color:#f45868;animation:shake .28s}@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:17px}.message{border-radius:17px;padding:13px 16px;text-align:center;font-size:1.05rem;font-weight:800;background:#e9f5ff;margin-top:15px;min-height:54px}.message.good{background:#d9f8e6;color:#126642}.message.bad{background:#ffedf0;color:#9f2949}.message.win{background:#fff0b5;color:#684a00}.reference{margin-top:14px}.reference summary{font-weight:800;cursor:pointer;padding:7px}.refletters{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.refletters span{padding:6px 9px;border-radius:9px;background:#e8f4ff;font-weight:750}.small{font-size:.88rem;color:#5b6381}.foot{text-align:center;font-size:.86rem;line-height:1.5;color:#586381}.hidden{display:none!important}.confetti{position:fixed;top:-20px;width:11px;height:16px;z-index:50;pointer-events:none;animation:fall 1.7s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(650deg);opacity:0}}
+@media(max-width:600px){main{padding:12px 9px 20px}.mascot{font-size:48px}.panel{border-radius:20px}.tile{min-width:49px;min-height:52px;padding:7px}.stats{justify-content:center}.stat{min-width:90px;flex:1;padding:7px}.field{min-width:100%}.controls>.primary{width:100%}.hint{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.stage-note{background:#fff3c7;border-radius:16px;padding:12px 16px;font-weight:750;margin-bottom:14px}
+.locked{opacity:.55}.speed-options{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.speed-options label{font-weight:800}.phase-label{border-radius:999px;background:#e0f4ff;padding:6px 13px;font-weight:850}
+.tile{touch-action:manipulation}
+@media(max-width:600px){.tiles{gap:5px;padding:8px}.tile{min-width:39px;min-height:45px;padding:5px 6px;font-size:1.1rem}}
+</style></head><body><main>
+<header class="hero"><div class="mascot" aria-hidden="true">🦉📚🌈</div><h1>Ábécé-kaland</h1><p>Előbb rakd sorba a teljes magyar ábécét, aztán mutasd meg, milyen gyors vagy!</p></header>
+<section class="panel" aria-label="Játék">
+<div class="stage-note" id="stageNote">🏆 1. küldetés: rakd sorba mind a 44 betűt! A gyorsasági kihívás csak ezután nyílik meg.</div>
+<div class="controls">
+<span class="phase-label" id="phaseLabel">1. küldetés · Teljes ábécé</span>
+<div class="speed-options hidden" id="speedControls">
+<label for="speedSize">Villámkör hossza:</label>
+<select id="speedSize"><option value="8">8 betű</option><option value="12" selected>12 betű</option><option value="16">16 betű</option><option value="20">20 betű</option></select>
+</div>
+<button class="primary" id="newGame">🎲 Újrakeverés</button>
+</div>
+<div class="stats"><div class="stat">⏱️ Idő: <strong id="timer">00:00</strong></div><div class="stat">⭐ Pont: <strong id="points">0</strong></div><div class="stat">🏅 Sikeres villámkör: <strong id="rounds">0</strong></div><div class="stat">🚀 Legjobb idő: <strong id="best">–</strong></div></div>
+</section>
+<section class="panel" aria-label="Betűrendezés">
+<p class="instructions">👆 <strong>Feladat:</strong> koppints két betűre, és helyet cserélnek! Számítógépen egérrel húzhatod is őket. <strong>Nincs segítség és nincs látható megoldás.</strong></p>
+<div class="boardtitle"><h2 id="boardTitle">🔤 A teljes magyar ábécé – összekeverve</h2><span class="hint">A többjegyű betűk egy-egy betűnek számítanak.</span></div>
+<div class="tiles" id="tiles" aria-label="Rendezhető betűk"></div>
+<div class="actions"><button class="primary" id="check">✅ Kész vagyok! Ellenőrzés</button><button class="secondary hidden" id="nextRound">⚡ Következő villámkör</button></div>
+<div id="message" class="message" role="status" aria-live="polite">Rendezd ábécésorrendbe a betűket! ✨</div>
+</section>
+<footer class="foot">🌟 Tableten és számítógépen is működik. A megoldást a játék nem jeleníti meg. 🌟</footer>
+</main><script>
+'use strict';
+const alphabet=['a','á','b','c','cs','d','dz','dzs','e','é','f','g','gy','h','i','í','j','k','l','ly','m','n','ny','o','ó','ö','ő','p','q','r','s','sz','t','ty','u','ú','ü','ű','v','w','x','y','z','zs'];
+const $=id=>document.getElementById(id), tiles=$('tiles');
+let stage=1,chosen=[],current=[],selected=-1,dragStart=-1,points=0,rounds=0,finished=false,started=0,elapsed=0,ticker=null,best=null;
+const randomInt=n=>Math.floor(Math.random()*n);
+function shuffle(a){let v=[...a];for(let i=v.length-1;i>0;i--){let j=randomInt(i+1);[v[i],v[j]]=[v[j],v[i]]}return v;}
+function fmt(s){let m=Math.floor(s/60);return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function clockStop(){if(ticker!==null)clearInterval(ticker);ticker=null;elapsed=Math.floor((performance.now()-started)/1000);$('timer').textContent=fmt(elapsed);}
+function clockStart(){if(ticker!==null)clearInterval(ticker);started=performance.now();$('timer').textContent='00:00';ticker=setInterval(()=>{$('timer').textContent=fmt(Math.floor((performance.now()-started)/1000));},250);}
+function show(t,kind=''){$('message').textContent=t;$('message').className='message '+kind;}
+function render(){
+ tiles.replaceChildren();
+ current.forEach((letter,i)=>{
+  let b=document.createElement('button');b.type='button';b.className='tile'+(selected===i?' selected':'');
+  b.textContent=letter;b.style.setProperty('--hue',String((i*39+230)%360));b.draggable=!finished;
+  b.setAttribute('aria-label',letter+' betű, '+(i+1)+'. hely');b.setAttribute('aria-pressed',String(selected===i));
+  b.addEventListener('click',()=>choose(i));
+  b.addEventListener('dragstart',e=>{dragStart=i;b.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(i))}});
+  b.addEventListener('dragover',e=>e.preventDefault());
+  b.addEventListener('drop',e=>{e.preventDefault();if(dragStart>=0&&dragStart!==i)swap(dragStart,i);dragStart=-1});
+  b.addEventListener('dragend',()=>{dragStart=-1;b.classList.remove('dragging')});tiles.appendChild(b);
+ });
+}
+function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('Folytasd a rendezést! 🧩');}
+function choose(i){if(finished)return;if(selected===-1){selected=i;render();show('Válaszd ki a másik betűt a cseréhez! 👆');}else if(selected===i){selected=-1;render();}else swap(selected,i);}
+function celebrate(){for(let i=0;i<45;i++){let e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ff61aa','#ffcc4f','#17c4ad','#7662e7','#55b6ff'][randomInt(5)];e.style.animationDelay=Math.random()*.65+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2400);}}
+function loadRound(){
+ chosen=stage===1?[...alphabet]:shuffle(alphabet).slice(0,Number($('speedSize').value)).sort((a,b)=>alphabet.indexOf(a)-alphabet.indexOf(b));
+ current=shuffle(chosen);if(current.every((v,i)=>v===chosen[i]))[current[0],current[1]]=[current[1],current[0]];
+ selected=-1;finished=false;$('nextRound').classList.add('hidden');
+ $('phaseLabel').textContent=stage===1?'1. küldetés · Teljes ábécé':'2. küldetés · Villámkör';
+ $('boardTitle').textContent=stage===1?'🔤 A teljes magyar ábécé – összekeverve':'⚡ Villámkör – rendezd a betűket!';
+ $('stageNote').textContent=stage===1?'🏆 1. küldetés: rakd sorba mind a 44 betűt! A gyorsasági kihívás csak ezután nyílik meg.':'⚡ 2. küldetés: a következő betűcsoportot rendezd a lehető leggyorsabban! Minden kör új véletlen válogatás.';
+ $('speedControls').classList.toggle('hidden',stage!==2);
+ $('newGame').textContent=stage===1?'🎲 Teljes ábécé újrakeverése':'🎲 Új villámkör';
+ render();clockStart();show(stage===1?'Rakd sorba a teljes ábécét! A játék nem árulja el a helyes betűket.':'Indult az idő! Rendezd sorba a betűket minél gyorsabban! ⏱️');
+}
+function check(){
+ if(finished)return;
+ if(!current.every((v,i)=>v===chosen[i])){show('Még nem teljesen jó a sorrend. Nézd át, és próbáld újra! 💪','bad');return;}
+ clockStop();finished=true;celebrate();
+ if(stage===1){
+  points+=440;$('points').textContent=points;stage=2;
+  $('phaseLabel').textContent='1. küldetés teljesítve!';
+  $('nextRound').textContent='⚡ Irány a villámkör!';
+  $('nextRound').classList.remove('hidden');
+  show('🏆 BRAVÓ! A teljes magyar ábécét hibátlanul sorba rendezted '+fmt(elapsed)+' alatt! Megnyílt a villámkör!','win');
+ }else{
+  rounds++;let bonus=Math.max(10,Math.round(chosen.length*20/(1+elapsed/30)));points+=bonus;
+  if(best===null||elapsed<best){best=elapsed;$('best').textContent=fmt(best);}
+  $('points').textContent=points;$('rounds').textContent=rounds;
+  $('nextRound').textContent='⚡ Következő villámkör';
+  $('nextRound').classList.remove('hidden');
+  show('🌟 Sikerült! Időd: '+fmt(elapsed)+' · +'+bonus+' pont. Jöhet a következő villámkör!','win');
+ }
+ render();
+}
+$('newGame').addEventListener('click',loadRound);
+$('speedSize').addEventListener('change',()=>{if(stage===2)loadRound();});
+$('nextRound').addEventListener('click',loadRound);
+$('check').addEventListener('click',check);
+loadRound();
+</script></body></html>
