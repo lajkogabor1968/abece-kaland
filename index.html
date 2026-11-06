@@ -63,6 +63,7 @@ function render(){
   tiles.appendChild(b);
  });
 }
+document.addEventListener('pointermove',e=>{if(pointer&&pointer.id===e.pointerId&&Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>12)pointer.moved=true;});
 document.addEventListener('pointerup',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pointer;pointer=null;if(!p.moved)return;let target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.tile');if(target&&tiles.contains(target)){const j=Number(target.dataset.pos);if(j!==p.from){ignoreClick=true;swap(p.from,j);setTimeout(()=>{ignoreClick=false},0);}}});
 document.addEventListener('pointercancel',()=>pointer=null);
 function swap(i,j){if(finished)return;[current[i],current[j]]=[current[j],current[i]];selected=-1;render();show('✅ A két betű helyet cserélt! Folytasd a rendezést! 🧩');}
