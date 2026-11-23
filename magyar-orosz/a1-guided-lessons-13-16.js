@@ -6,6 +6,10 @@
     {
       title: 'Родные: кто кому приходится',
       words: ['öcs', 'húg', 'nővér', 'nagymama', 'nagyapa', 'szülő', 'nagyszülő', 'testvér', 'férj', 'feleség', 'család'],
+      // The core teaches basic family members and possession first. The
+      // spouse terms at indices 8–9 remain optional, and the already taught
+      // család stays at its legacy index 10 for revision.
+      coreCount: 8,
       extra: [
         ['húgom', 'моя младшая сестра', 'Éva a húgom.', 'Ева — моя младшая сестра.'],
         ['öcsém', 'мой младший брат', 'Péter az öcsém.', 'Петер — мой младший брат.'],
@@ -66,6 +70,9 @@
     {
       title: 'Профессии и место работы',
       words: ['tanár', 'tanárnő', 'magyartanár', 'orvos', 'eladó', 'pincér', 'dolgozik', 'munka', 'iskola', 'kórház', 'étterem', 'bolt'],
+      // The fifth prepared sentence explains étteremben before the reading;
+      // étterem remains an extra card at its original saved index.
+      wordPreviewCount: 5,
       extra: [
         ['dolgozom', 'я работаю', 'Az iskolában dolgozom.', 'Я работаю в школе.'],
         ['dolgozol', 'ты работаешь', 'Hol dolgozol?', 'Где ты работаешь?'],
@@ -124,6 +131,14 @@
     {
       title: 'Описываем людей: какой он?',
       words: ['kedves', 'fiatal', 'magas', 'alacsony', 'boldog', 'szép', 'jó', 'rossz', 'kicsi', 'nagy', 'új', 'régi', 'nagyon', 'nem'],
+      // All five prepared phrases are needed early to introduce új, nem and
+      // nagyon, even though those cards occur after the mandatory first ten.
+      wordPreviewCount: 5,
+      contrastPractice: [
+        {ru: 'Учитель приветливый.', answers: ['A tanár kedves.', 'A tanár kedves van.', 'A tanár kedves vagyok.'], correct: 0, explanation: 'В настоящем времени с он / она прилагательное-сказуемое употребляется без van. Vagyok — форма для «я».',},
+        {ru: 'Учитель невысокий.', answers: ['A tanár nem magas.', 'A tanár nincs magas.', 'A tanár nem magas van.'], correct: 0, explanation: 'Nem ставится перед прилагательным magas. Nincs обозначает отсутствие, а не качество человека.',},
+        {ru: 'Я молодой / молодая.', answers: ['Fiatal vagyok.', 'Fiatal van.', 'Fiatal vagy.'], correct: 0, explanation: 'С «я» нужна форма vagyok; vagy относится к «ты». Без связки прилагательное употребляется в третьем лице.',}
+      ],
       extra: [
         ['Milyen?', 'какой? какая? какое?', 'Milyen a tanár?', 'Какой учитель? / Какой он, учитель?'],
         ['kedves tanár', 'добрый / приветливый учитель', 'Ez egy kedves tanár.', 'Это приветливый учитель.'],
@@ -179,6 +194,14 @@
     {
       title: 'У меня есть — у меня нет',
       words: ['van', 'könyv', 'táska', 'autó', 'testvér', 'barát', 'telefon', 'kulcs', 'család', 'nem'],
+      // The fourth listening model explicitly introduces nincs before the
+      // lesson uses it in dialogue, reading and obligatory free writing.
+      wordPreviewCount: 5,
+      contrastPractice: [
+        {ru: 'У меня есть книга.', answers: ['Van egy könyvem.', 'Nincs könyvem.', 'Van egy könyved.'], correct: 0, explanation: 'Van сообщает о наличии. Könyvem — моя книга; könyved — твоя книга.',},
+        {ru: 'У меня нет машины.', answers: ['Nincs autóm.', 'Nem van autóm.', 'Nincs autód.'], correct: 0, explanation: 'Nincs — отрицательная форма наличия. Autóm — моя машина; autód — твоя машина. Здесь не говорим nem van.',},
+        {ru: 'У тебя есть книга?', answers: ['Van könyved?', 'Van könyvem?', 'Nincs könyved?'], correct: 0, explanation: 'Van + könyved? спрашивает о наличии книги у собеседника. -ed передаёт «твоя».',}
+      ],
       extra: [
         ['nincs', 'нет; отсутствует', 'Nincs autóm.', 'У меня нет машины.'],
         ['könyvem', 'моя книга', 'Van egy könyvem.', 'У меня есть книга.'],

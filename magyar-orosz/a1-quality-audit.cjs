@@ -1,5 +1,5 @@
 /* Run: node a1-quality-audit.cjs
- * Read-only checks for all 28 beginner lessons. Does not alter course files
+ * Read-only checks for all 30 beginner lessons. Does not alter course files
  * or any learner progress stored in browsers.
  */
 'use strict';
@@ -17,7 +17,8 @@ const additions = [
  ['a1-guided-lessons-13-16.js','TanmuhelyA1Units13to16'],
  ['a1-guided-lessons-17-20.js','TanmuhelyA1Units17to20'],
  ['a1-guided-lessons-21-24.js','TanmuhelyA1Units21to24'],
- ['a1-guided-lessons-25-28.js','TanmuhelyA1Units25to28']
+ ['a1-guided-lessons-25-28.js','TanmuhelyA1Units25to28'],
+ ['a1-guided-lessons-29-30.js','TanmuhelyA1Units29to30']
 ];
 
 /* Validate the first eight original lessons as well as appended units. */
@@ -58,7 +59,7 @@ for (const [filename, exportName] of additions) {
   all.push(lesson);
  }
 }
-if (all.length!==28) errors.push('Expected 28 A1 lessons, found '+all.length);
+if (all.length!==30) errors.push('Expected 30 A1 lessons, found '+all.length);
 // Every advertised A1 lesson word must actually be present on some study card.
 // Supplemental words are added after the old card order to protect old checkpoints.
 const dictionarySandbox={window:{}};
@@ -149,8 +150,8 @@ if(!source.includes("level==='A1'?(i%2===0?'Собеседник A':'Собес�
  errors.push('A1: dialogue speakers are still hardcoded as Anna and Péter');
 // Freeze the completed lesson's displayed percentage before the next lesson
 // rendering resets testCorrect to zero.
-if(!source.includes("const finishedPercent=Math.round(testCorrect/")||
- !source.includes("note('Проверка слов завершена ('+finishedPercent+'%)"))
+if(!source.includes('finishedPercent=Math.round(testCorrect/Math.max(1,quizTargetCount)*100)')||
+ !source.includes("note('✓ Проверка слов завершена ('+finishedPercent+'%)"))
  errors.push('A1: next lesson may incorrectly report 0% for the completed quiz');
 // An A1 retake must preserve the best achieved vocabulary score while
 // recording the latest score for review. Existing old result fields remain valid.
@@ -161,7 +162,7 @@ if(!source.includes("current.bestScore=best.score")||
  errors.push('A1: best score may be overwritten by a weaker retake');
 // A previously solved grammar question must be rendered only after its checkpoint
 // is restored. Otherwise a completed lesson can show actionable answer buttons.
-if(!source.includes('restoreCheckpoint();grammarQuestion();renderDialogueUnderstanding();'))
+if(!source.includes('restoreCheckpoint();cardIndex=resumeA1CardIndex();grammarQuestion();renderDialogueUnderstanding();'))
  errors.push('A1: grammar state rendered before restoring saved lesson progress');
 // Regression: accept short, well-formed beginner questions without treating
 // a single noun with punctuation as an independently written sentence.

@@ -10,6 +10,7 @@ const extract=pattern=>{
 };
 const required=extract(/function requiredCardCount\(\)\{[^\n]+\}/);
 const chunks=extract(/function cardChunks\(\)\{[^\n]+\}/);
+const resumeIndex=extract(/function resumeA1CardIndex\(\)\{[\s\S]*?\n\}/);
 const renderer=extract(/function renderCardCheckpoint\(\)\{[\s\S]*?\n\}/);
 const words=Array.from({length:12},(_,i)=>({hu:'magyar'+i,ru:'русский'+i}));
 
@@ -19,16 +20,19 @@ class Element {
  after(item){const index=this.parent.children.indexOf(this);item.parent=this.parent;this.parent.children.splice(index+1,0,item)}
  replaceChildren(...items){this.children=[];this.append(...items)}
  setAttribute(key,value){(this.attributes??={})[key]=value}
+ querySelector(selector){return this.children.find(child=>child.tag===selector)}
 }
 const root=new Element('main'),flash=new Element('section');flash.id='integratedFlashcard';root.append(flash);
 const find=(node,id)=>node.id===id?node:node.children.map(child=>find(child,id)).find(Boolean);
-let saved=0,lastNote='';
+let saved=0,lastNote='',routeSaved=0,breaks=0;
 const state={
  level:'A1',flippedWords:new Set([0,1,2,3]),checkedBatches:new Set(),
+ a1FastTrackPassed:false,fastTrackPacks:new Set(),
  checkBatch:-1,checkStep:0,checkRendered:'',cardIndex:4,step:0,
- rows:()=>words,$:id=>find(root,id),el:(...args)=>new Element(...args),
+ rows:()=>words,lesson:()=>({}),$:id=>find(root,id),el:(...args)=>new Element(...args),
  randomOrder:items=>[...items].reverse(),
  saveCheckpoint:()=>{saved++},
+ save:()=>{routeSaved++},back:{click:()=>{breaks++}},
  note:message=>{lastNote=message},
  stepButton:{disabled:true}
 };
@@ -54,20 +58,46 @@ choose();
 assert.deepEqual([...context.store],[0]);
 assert.equal(state.cardIndex,5,'second five-word pack opens after the first retrieval check');
 assert.equal(find(root,'a1CardCheckpoint').hidden,true,'completed check disappears');
+const pause=find(root,'a1CardBreak');
+assert.ok(pause&&!pause.hidden,'after five taught words a break option must appear');
+pause.onclick();
+assert.equal(routeSaved,1,'pausing preserves the selected lesson and step');
+assert.equal(breaks,1,'a voluntary break returns to the study menu');
 for(const index of [5,6,7,8,9])state.flippedWords.add(index);
 context.show();
 assert.match(find(root,'a1CardCheckPrompt').textContent,/Блок 2/);
 choose();choose();
 assert.deepEqual([...context.store],[0,1]);
+assert.equal(pause.hidden,true,'the five-word break suggestion disappears after finishing both groups');
 assert.equal(state.stepButton.disabled,false,'the next learning stage opens only after both checks');
 assert.match(lastNote,/Оба блока закреплены/);
-assert.equal(saved,2,'each pack completion is saved');
+assert.equal(saved,3,'both pack completions and the optional break are saved');
+state.flippedWords=new Set();state.checkedBatches=new Set();state.fastTrackPacks=new Set([0]);
+context.show();
+assert.equal(pause.hidden,false,'the break option also works after the first group is placed by writing');
+assert.equal(find(root,'a1CardCheckpoint').hidden,true,'a written placement is not presented as an ordinary retrieval quiz');
+
+const suggested=(level,flipped,checked=[],quick=false,placed=[])=>runInNewContext(`${required}\n${chunks}\n${resumeIndex}\nresumeA1CardIndex()`,{
+ level,a1FastTrackPassed:quick,flippedWords:new Set(flipped),checkedBatches:new Set(checked),fastTrackPacks:new Set(placed),rows:()=>words,lesson:()=>({})
+});
+assert.equal(suggested('A1',[]),0,'brand-new A1 begins with the first card');
+assert.equal(suggested('A1',[0,1]),2,'returning after two cards resumes the third');
+assert.equal(suggested('A1',[0,1,2,3,4]),0,'a fully viewed but unchecked group reopens its own quiz');
+assert.equal(suggested('A1',[0,1,2,3,4],[0]),5,'after the first retrieval check resume in the second group');
+assert.equal(suggested('A1',[],[],false,[0]),5,'a group placed by writing reopens at the sixth card without forging flips');
+assert.equal(suggested('A1',[0,1,2,3,4,5,6,7],[0]),8,'second group resumes at its first unseen card');
+assert.equal(suggested('A1',[],[],true),0,'fast-track has no forged card progress to restore');
+assert.equal(suggested('A2',[0,1,2,3,4],[0]),0,'A2 keeps its previous card-start behavior');
+assert.match(source,/restoreCheckpoint\(\);cardIndex=resumeA1CardIndex\(\);grammarQuestion\(\);renderDialogueUnderstanding\(\);resumeQuiz\(\)/,
+ 'the actual workbook must use the restored A1 card position');
 
 const legacy=extract(/function restoreCheckpoint\(\)\{[\s\S]*?\n\}/);
 const restore=flipped=>runInNewContext(`${required}\n${chunks}\n${legacy}\nrestoreCheckpoint();([...checkedBatches])`,{
- level:'A1',rows:()=>words,lessonKey:()=> 'A1:2',
+ level:'A1',rows:()=>words,lesson:()=>({}),lessonKey:()=> 'A1:2',
  checkpoint:()=>({flipped,written:[],grammar:false,dialogue:false}),
  flippedWords:new Set(),correctWriting:new Set(),checkedBatches:new Set(),
+ fastTrackPacks:new Set(),
+ read:()=>({}),KEY:'magyarorosz.v1',dialogueUnderstood:false,
  checkBatch:0,checkStep:1,checkRendered:'question',grammarReviewed:false,dialoguePractised:false
 });
 assert.deepEqual([...restore([0,1,2,3,4,5,6,7,8,9])],[0,1],
@@ -77,3 +107,4 @@ assert.deepEqual([...restore([0,1,2,3,4,5,6])],[0],
 console.log('PASS: A1 retrieval checks appear only after each five-card pack and require two correct answers.');
 console.log('PASS: wrong choices offer feedback; the second pack and next stage remain gated.');
 console.log('PASS: saved legacy word progress resumes without a new lesson ID; A2 is unchanged.');
+console.log('PASS: five-word breaks save the stage; reopening continues at the next unseen card.');

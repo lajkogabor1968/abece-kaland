@@ -1,18 +1,18 @@
 # A1 minőségi kapuk – Magyar–orosz Tanműhely
 
-Állapot: 2026. november 22.  A cél egy kezdőt önállóan tanító, ellenőrizhető, orosz anyanyelvűek számára készített magyar nyelvtanfolyam. Ez belső fejlesztési terv, nem kiadási tanúsítvány.
+Állapot: 2026. november 23. A cél egy kezdőt önállóan tanító, ellenőrizhető, orosz anyanyelvűek számára készített magyar nyelvtanfolyam. Ez belső fejlesztési terv, nem kiadási tanúsítvány.
 
 ## Jelenlegi, automatizáltan mérhető kiindulás
 
 - A1 szókincstár: 600 bejegyzés, 580 különböző magyar címszó.
-- A1 vezetett tanulási út: **28 lecke**, 341 különböző tanított szó vagy kifejezés; 173 címszó szerepel az A1-szótárban (**29,8%-os címszólefedettség**). A 9–12. lecke a személyes adatokat, országokat, nyelveket és az 1–20-as számokat, a 13–16. lecke a családi viszonyokat, foglalkozásokat, tulajdonságokat és a birtokos alakokat, a 17–20. lecke a helyviszonyokat, a 21–24. lecke a jelen idejű igeragozást, szeret + főnévi igenév szerkezetet, időpontokat és a tárgyrag alapjait, a 25–28. lecke az udvarias kérést, a mennyiségeket, az éttermi rendelést és a piaci vásárlást tanítja.
+- A1 vezetett tanulási út: **30 lecke**, 373 különböző tanított szó vagy kifejezés; 199 címszó szerepel az A1-szótárban (**34,3%-os címszólefedettség**). A 9–12. lecke a személyes adatokat, országokat, nyelveket és az 1–20-as számokat, a 13–16. lecke a családi viszonyokat, foglalkozásokat, tulajdonságokat és a birtokos alakokat, a 17–20. lecke a helyviszonyokat, a 21–24. lecke a jelen idejű igeragozást, szeret + főnévi igenév szerkezetet, időpontokat és a tárgyrag alapjait, a 25–28. lecke az udvarias kérést, a mennyiségeket, az éttermi rendelést és a piaci vásárlást, a 29–30. lecke az útbaigazítást és az alapvető közérzet-kifejezéseket tanítja.
 - A1 nyelvtan: 10 tanító fejezet, 66 feladat.
 - A2 vezetett tanulási út: 3 lecke, 25 különböző szó vagy kifejezés; az A1-es szókincs ismétlése szándékos.
 - A szókincstár, az önálló nyelvtani modul, az ECL-gyakorlók és a kiegészítő szövegértések több anyagot tartalmaznak, mint a vezetett leckeút. A fenti arány **csak a vezetett leckék szókincslefedettsége**, nem az alkalmazás teljes szókincse.
 
 A mérés megismételhető: `node magyar-orosz/verify-guided-coverage.mjs`.
 
-## Duolingo-mintájú, megismételhető A1-audit – 2026. november 22.
+## Duolingo-mintájú, megismételhető A1-audit – frissítve 2026. november 23-án
 
 Futtatás a repó gyökeréből: `node magyar-orosz/audit-a1-release.mjs`. Ezt a
 korábbi 14 célzott technikai ellenőrzéssel és a
@@ -22,13 +22,25 @@ tananyag-tervezési és ellenőrzési elveiből indultunk ki.
 
 | Ellenőrzési kapu | Megfigyelt eredmény | Értelmezés |
 | --- | --- | --- |
-| 28 A1-es lecke, egyedi sorrend, régi azonosítók | Rendben | A korábbi tanulói eredmények kulcsai érintetlenek. |
-| Szókártyák, orosz magyarázatok, minták, párbeszédek | 28/28 lecke szerkezetileg ellenőrizve | Ez **nem** hitelesíti a fordítások nyelvi helyességét. |
-| Nyelvtani és szövegértési javítókulcs | 28/28 lecke: létező kulcs, nem duplikált választási lehetőségek | A többféleképpen helyes válaszok emberi lektorálása még szükséges. |
-| Tanítás előtti számonkérés kizárása | Az újonnan indított A1-es záróteszt 10 kérdése csak a kötelezően átnézett első 10 kártyából kerülhet ki | A többi kártya külön, szabadon tanulható; a régi folyamatban lévő tesztek sorrendje megmarad. |
+| 30 A1-es lecke, egyedi sorrend, régi azonosítók | Rendben | A korábbi tanulói eredmények kulcsai érintetlenek. |
+| Szókártyák, orosz magyarázatok, minták, párbeszédek | 30/30 lecke szerkezetileg ellenőrizve | Ez **nem** hitelesíti a fordítások nyelvi helyességét. |
+| Nyelvtani és szövegértési javítókulcs | 30/30 lecke: létező kulcs, nem duplikált választási lehetőségek | A többféleképpen helyes válaszok emberi lektorálása még szükséges. |
+| Tanítás előtti számonkérés kizárása | Az A1-es záróteszt csak az adott leckében kötelezőnek jelölt, előre bemutatott szavakat kérdezi (általában 10, a 3., 6. és 13. leckében 8); a tanulási csoportok külön-külön, két hibátlan írásválasszal átugorhatók | Két mintaszó nem igazolja a teljes csoport tudását. A nyelvtani, beszéd-, írás- és zárófeladat nem ugorható át. |
 | Teljes automatikus A1-audit | **0 fennmaradó kritikus szerkezeti találat** | A feltárt első leckés magyarázati hiányt javítottuk. |
-| Szókincsterhelés | **13 lecke szakmai felülvizsgálatra jelölve** | 9–13 új alapszókártya; figyelmeztetés, nem automatikus bukás. |
-| Vezetett út / A1-szótár | 173/580 különböző címszó, **29,8%** | Nem tekinthető kész A1-es útvonalnak. |
+| Szókincsterhelés | **13 lecke szakmai felülvizsgálatra jelölve** | 9–13 új alapszókártya; figyelmeztetés, nem automatikus bukás. A 29–30. leckében legfeljebb 8 új kötelező szó szerepel. |
+| 3. A1-lecke csökkentett kötelező anyaga | **8 kötelező + 2 választható, régi indexen** | Az összes új szószám alapú 13 figyelmeztetés változatlan; valós pedagógiai előnyt még nem mértünk. |
+| 6. A1-lecke csökkentett kötelező anyaga | **8 kötelező + 2 választható, régi indexen** | Az új teszt 8 kérdéses, régi 10 kérdéses mentés változatlan; valós pedagógiai előnyt még nem mértünk. |
+| 13. A1-lecke csökkentett kötelező anyaga | **8 kötelező + 2 új választható szó, és ismétlés** | Az új teszt 8 kérdéses; 18 kártya és a régi 10 kérdéses mentés megmarad. |
+| 14–15. A1-lecke korai szóalak-előkészítése | **5-5 meghallgatható magyar–orosz minta a szókártyák előtt** | Az étteremben, illetve új, nem, nagyon alakokat a tanuló már a kötelező feladatok előtt látja; a valós megértés nem igazolt. |
+| A1 szabad fogalmazás ékezet-visszajelzése | **Legfeljebb 3, egyértelmű lecke-mintához kötött javaslat gépelés közben** | Nem pontozza a szabad szöveget és nem blokkolja a továbbhaladást; valódi tanulói próba még nincs. |
+| A1/15–16 szabad fogalmazás, két nyelvtani szerkezet | **Célzott orosz figyelmeztetés a hibás `A tanár kedves van.` és `Nem van autóm.` mintára** | Szűk mintafelismerés, nem általános nyelvtani javító; nem értékeli a szöveget, nem blokkol; a valódi tanulói hatás még nincs igazolva. |
+| A1/15–16 mondatkontraszt önellenőrzés | **3+3 választható mondatválasztás azonnali orosz indoklással, újrapróbálással és a helyes magyar mondat külön hangindítójával** | Az egyik lecke a melléknévi állítmányt, a másik a `van`–`nincs` és a birtokos szóalakokat gyakoroltatja; nem változtatja a haladási kaput vagy pontszámot; a hangminőség még nem igazolt. |
+| A1/1–2 alapnyelvtani önellenőrzés | **3+3 választható névelő- és `vagyok`/`vagy`/`van`-kontraszt, helyes mondattal, orosz indoklással és hangindítóval** | A nulláról induló tanuló a szabály után rögtön próbálhatja ki a megértését; nem változtatja az eredményt vagy a szabad leckekezdést. |
+| A1/16 hiányt kifejező minta időzítése | **A `Nincs autóm.` magyar–orosz mondat a szókártyák előtti öt hangos minta között jelenik meg** | A már használt alakot korábban magyarázza; a tényleges hangzást és megértést még nem igazoltuk valós eszközön. |
+| Vezetett út / A1-szótár | 199/580 különböző címszó, **34,3%** | Nem tekinthető kész A1-es útvonalnak. |
+| A1-es kezdőlecke szabad kiválasztása | Szimulált állapotteszt sikeres | A 2. vagy későbbi lecke közvetlenül megnyitható, a választás mentődik; valódi mobilos próba még nincs. |
+| Ismert szavak gyors A1-es ellenőrzése | Két pontos magyar írásválasz egy ötszavas csoporthoz; az első csoport sikere a második hibája után is megmarad | A felismert csoport külön mentődik, nem jelöl meg nem nyitott kártyákat; valódi tanulói validálás még hátravan. |
+| Kezdő magyar–orosz kártyaminták | 12 célzottan rögzített mondat–fordítás ellenőrzés a 2., 5., 7. és 10. leckében | Előresiető nyelvtani alakok és félreérthető példák javítva, de ez nem teljes körű anyanyelvi lektorálás. |
 | Független nyelvi és tanulói próba | **Még nem teljesült** | Orosz anyanyelvű lektor és 6–10 valós tanuló szükséges. |
 
 Az első körben megoldott pedagógiai hiba: az 1. lecke immár külön elmagyarázza,
@@ -82,7 +94,7 @@ teszt már minden olvasmányban ellenőrzi az előkészítés megjelenését
 **még a hang és a szöveg előtt**. Ez olvasási segítség, nem helyettesíti
 a részletes, fokozatos nyelvtani tanítást vagy az anyanyelvi lektorálást.
 
-**A1 szókártya-terhelés csökkentése – 2026. november 23.:** a 28 A1-es
+**A1 szókártya-terhelés csökkentése – 2026. november 23.:** az első 28 A1-es
 vezetett lecke tíz kötelező szókártyáját két, egymás után nyíló, ötszavas
 tanulási egységre bontottuk. Minden ötödik kártya után két rövid,
 orosz jelentésből magyar szót felismerő kérdés segíti az aktív felidézést;
@@ -96,8 +108,113 @@ ellenőrzi. **A 13 leckére vonatkozó magas új-szószám figyelmeztetés
 egyelőre megmarad:** a két részre osztás a terhelést mérsékli, de nem
 igazolja, hogy ennyi új szó egy leckében minden kezdőnek megfelelő.
 
+**Ötszavas szünet és a megszakított szókártyák folytatása – 2026. november 23.:**
+az első ötszavas egység sikeres rövid ellenőrzése után a tanuló
+választhatja a mentett szünetet. A következő belépéskor a már mentett
+kártyamegnyitások és az ötszavas ellenőrzések alapján jelenik meg az
+első befejezetlen kártya, nem automatikusan az első szó. Ha a soron
+következő ellenőrzés még hiányzik, az ismét elérhető. A korábbi
+ellenőrzőpont-rekordok változatlanul használhatók, új mező nem szükséges.
+A `verify-a1-card-chunks.mjs` szimulálja az önkéntes szünetet, a
+visszatérési pozíciót, a gyorsított ellenőrzést és az A2-es kivételt.
+Ez működési logikai ellenőrzés, nem bizonyított böngészős/mobilos
+használhatóság; **a 13 szókincsterhelési figyelmeztetés megmaradt**.
+
+**Nulláról indulók A1-es mondat-előkészítése – 2026. november 23.:**
+az összes A1-es lecke szókártyái előtt alapértelmezés szerint három,
+a 14. és 15. leckében öt, korábban már a párbeszédhez előkészített
+magyar–orosz mondatot és orosz magyarázatot jelenítünk meg,
+külön magyar hangindító gombbal. A magyarázat összecsukható, ezért a
+már ismert mintákkal rendelkező tanulónak nem kötelező végigolvasnia.
+Az eddigi leckeazonosítók, feladatok és ellenőrzőpontok változatlanok;
+az A2-es tanmenethez nem nyúltunk. A `verify-a1-word-preview.mjs`
+ellenőrzi a három, illetve öt meglévő mondat helyes felületi kezelését és leckeváltáskor
+a tartalom frissítését. Ez még nem valódi mobilos vagy tanulói hatásvizsgálat:
+**a 13 túlterhelt lecke figyelmeztetését továbbra sem oldja fel**.
+
+**Ismert ötszavas blokk külön átugrása – 2026. november 23.:**
+az önkéntes írásos gyorsellenőrzés minden még befejezetlen ötszavas
+csoportból két szót választ. Két pontos, ékezethelyes magyar válasz után
+az adott blokk önállóan átugorható. Ha a következő blokkban hibázik a
+tanuló, az előző sikerét nem veszti el, és később csak a még hiányzó
+blokkot vizsgáljuk. A teljesen új szókincset továbbra is kártyán tanítjuk;
+az elismert csoport **nem** kap hamis kártyamegnyitást vagy hagyományos
+visszakérdezési pontot. Az eddigi lecke- és mentéskulcs változatlan,
+de az A1 ellenőrzőpont-rekord új `a1FastTrackPacks` mezője tárolja a
+részsikereket; a régi, teljes négyválaszos igazolás is érvényben marad.
+A `verify-a1-fast-track.mjs`, `verify-a1-card-chunks.mjs` és
+`verify-a1-teach-before-test.mjs` szimulálja a két csoport kombinációit
+és a visszaállítást. A 13 nagy új-szószámú lecke **tartalmi terhelését ez
+nem szünteti meg**, csak a már ismert anyag fölösleges ismétlését csökkenti.
+
+**Családlecke nyolc kötelező szóval – 2026. november 23.:**
+az A1/3 családbemutató témájában az első nyolc szó a kötelező rész,
+a `barát` és `testvér` szabadon gyakorolható kilencedik–tizedik kártya.
+Így az új tanuló két, **5+3 szavas** egységet tanul és nyolc kérdésből
+áll a zárótesztje. A kártyák eredeti indexe, a korábban megírt válaszok
+és a leckeazonosító nem változott. Az új teszt mentett kérdésszáma 8,
+de a régi rekordok számmező nélkül **10 kérdésesnek számítanak**, így
+a folyamatban levő korábbi teszt sem rövidül le utólag. A
+`verify-a1-family-core.mjs` teszteli a két kötelező blokkot, a teljes
+régi szósorrendet és az új/régi tesztmentések együttes kezelését.
+Ez pedagógiai próba, és önmagában nem jelenti a 13 teljes új-szószám
+alapú figyelmeztetés megszűnését vagy a valós tanulói eredmény igazolását.
+
+**Napirendlecke nyolc kötelező szóval – 2026. november 23.:**
+az A1/6 leckében az első nyolc kötelező szó: `ma`, `holnap`,
+`reggel`, `este`, `iskola`, `tanul`, `olvas`, `dolgozik`.
+A `sétál` és `mindennap` az eredeti kilencedik–tizedik helyen
+választható marad, a tanulási blokkok 5+3 szavasak, az új teszt
+8 kérdéses. A korábban elkezdett 10 kérdéses teszt végigvihető,
+a kártyák mentett indexe és az A2-es út változatlan. A kötelező rövid
+feladatok nem igénylik a két kiegészítő szót; a külön, felnyitható hosszú
+olvasmányban a `sétálok` alak fordítással szerepel.
+A `verify-a1-daily-core.mjs` szerkezeti regressziós próba ezt az
+elválasztást és a régi mentéseket ellenőrzi. A 13 teljes szókészletes
+figyelmeztetés megmarad, élő tanulói hatásmérés nem történt.
+
+**Rokonságlecke nyolc kötelező szóval – 2026. november 23.:**
+az A1/13 leckében az `öcs`, `húg`, `nővér`, `nagymama`, `nagyapa`,
+`szülő`, `nagyszülő`, `testvér` marad kötelező. Ez hét új és egy
+korábban már szereplő szó; a `férj` és `feleség` két további új,
+választható szó a régi 9–10. kártyahelyen. A `család` ismétlése és
+a hét kiegészítő kifejezés megmarad, így az eredeti 18 kártya
+azonosítója nem változik. A két kötelező blokk 5+3 szavas, az új
+záróteszt 8 kérdéses; a folyamatban levő régi tízkérdéses tesztek
+ugyanúgy visszaállnak. A kötelező nyelvtan, párbeszéd, olvasmány,
+fogalmazás és önálló nyelvtani ellenőrzés nem kéri a két házastársi
+megnevezést. A `verify-a1-relatives-core.mjs` a tényleges kártyasort,
+mentéseket és az A2-es változatlanságot szimulálja. Ez továbbra is
+technikai-szerkezeti bizonyíték, nem validált tanulási hatás.
+
+**Foglalkozás- és személyleírási előtanítás – 2026. november 23.:**
+a 14. leckében az eredeti ötödik magyar–orosz előkészítő mondat már a
+szókártyák előtt elmagyarázza és meghallgathatóvá teszi az `étteremben`
+alakot, amely a kötelező olvasmányban is szerepel. A 15. leckében öt
+előkészítő mondat látható, így az `új`, `nem`, `nagyon` szavak sem csak
+a későbbi nyelvtanban vagy az opcionális kártyákon bukkannak fel.
+Ezek már létező fordítások és magyarázatok, csak korábbi ponton jelennek
+meg; az eredeti szóindexek, a mentések, a kötelező tesztek és A2
+változatlanok. A `verify-a1-word-preview.mjs` és a kiadási audit
+szimuláltan ellenőrzi a megjelenést, az öt gombot és az A2 kizárását.
+A valódi hangminőség és az orosz anyanyelvű megértés még nem igazolt.
+
+**Szabad fogalmazás: korlátozott, azonnali ékezetsegítség – 2026. november 23.:**
+az A1-es írásfelület saját szövegénél a lecke már ismert magyar
+szavaiból, párbeszédeiből, rövid olvasmányából és tanári mintáiból
+gyűjtünk ékezetes szóalakokat. Gépelés közben például a `haz` → `ház`
+javaslat megjelenhet, ha a lecke egyértelműen tartalmazza a `ház`
+alakot; eltérő, azonos ékezet nélküli alakra visszavezethető
+mintáknál a rendszer **nem találgat**. Egyszerre legfeljebb három,
+oroszul körülírt javaslat látható. Ezek nem automatikus átírások,
+nem grammatikai osztályzatok és nem részei a továbblépés feltételeinek.
+A régi fogalmazásmentési kulcs és az A2-es írásfeladat változatlan.
+A `verify-writing-feedback.mjs` ellenőrzi a bizonytalan alakok
+kizárását, a magyar ékezetek kezelését és a felületi bekötést;
+élő mobilos vagy tanulói eredményességi bizonyíték még nincs.
+
 **A1 szókártyák jelentésének célzott felülvizsgálata – 2026. november 23.:**
-az aktuális kártyarenderelővel előállított **468 A1-es kártyát** a
+az akkori kártyarenderelővel előállított **468 A1-es kártyát** a
 `verify-a1-card-meaning.mjs` ellenőrzi üres jelentésre, leckén belüli
 azonos orosz írásfeladatra, néhány túl korai múlt idejű alakra és
 felszólításra. Az „ülj le erre a székre” mondat helyett a 11., 19. és 20.
@@ -127,7 +244,7 @@ anyanyelvi stilisztikai és szemantikai lektorálást**.
 
 ## Javasolt A1-es bővítési rend
 
-Megmaradnak az eredeti nyolc lecke és eredményazonosítóik; a 9–12. lecke `A1:8`–`A1:11`, a 13–16. lecke `A1:12`–`A1:15`, a 17–20. lecke `A1:16`–`A1:19`, a 21–24. lecke `A1:20`–`A1:23`, a 25–28. lecke `A1:24`–`A1:27` azonosítóval készült el. A további új leckék ezek után kerülnek, amíg nincs stabil, tartós tanulóazonosító-alapú átrendezés.
+Megmaradnak az eredeti nyolc lecke és eredményazonosítóik; a 9–12. lecke `A1:8`–`A1:11`, a 13–16. lecke `A1:12`–`A1:15`, a 17–20. lecke `A1:16`–`A1:19`, a 21–24. lecke `A1:20`–`A1:23`, a 25–28. lecke `A1:24`–`A1:27`, a 29–30. lecke `A1:28`–`A1:29` azonosítóval készült el. A további új leckék ezek után kerülnek, amíg nincs stabil, tartós tanulóazonosító-alapú átrendezés.
 
 | Egység | Tanulási cél | Nyelvtani alap |
 | --- | --- | --- |
@@ -136,9 +253,10 @@ Megmaradnak az eredeti nyolc lecke és eredményazonosítóik; a 9–12. lecke `
 | A1/17–20 | **Elkészült:** otthon, iskola, környezet, helyviszonyok | hol? hová?, -ban/-ben, -ba/-be, -on/-en/-ön, mellett/előtt/mögött/alatt |
 | A1/21–24 | **Elkészült:** mindennapi igék, szabadidős tevékenységek, időpontok, vásárlás | jelen idejű alanyi ragozás, szeret + főnévi igenév, tagadás, -kor, alapvető tárgyeset |
 | A1/25–28 | **Elkészült:** kávézó, élelmiszermennyiségek, éttermi rendelés és piaci vásárlás | szeretnék, hány?/mennyi?, mértékegységek, kérek/kérem, tárgyrag megerősítése |
-| A1/29–32 | Város, utazás, útbaigazítás | helyviszonyok, rögzült útbaigazító formulák |
+| A1/29–30 | **Elkészült:** útbaigazítás, tömegközlekedés, egyszerű közérzet és segítségkérés | hol van?, jobbra/balra, gyalog, fej → fejem, torok → torkom |
+| A1/31–32 | Tervezett: város, utazás további helyzetei | egyszerű útbaigazító formulák és ismétlés |
 | A1/33–36 | Szabadidő, időjárás, tervek | alapvető igekötők és jövőre utalás |
-| A1/37–40 | Egyszerű egészségügyi helyzetek, hétköznapi problémák | egyszerű kell/lehet minták, rövid kérdés–válasz |
+| A1/37–40 | Összetettebb hétköznapi problémák | egyszerű kell/lehet minták, rövid kérdés–válasz |
 | A1/41–... | Ismétlés, hiányzó szócikkek, szintzáró gyakorlás | saját hibák célzott újratanítása |
 
 A **nem elkészültnek jelölt** egységek egyelőre tervek. A pontos szószám-elosztást a meglévő 600 szócikk témacsoportos, orosz nyelvű lektorálása után rögzítjük.

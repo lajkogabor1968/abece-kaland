@@ -11,7 +11,8 @@ const book=read('lesson-book.js');
 const html=read('index.html');
 const context={window:{}};
 const unitScripts=['data.js','ecl-vocab.js','a1-guided-lessons-next.js','a1-guided-lessons-13-16.js',
- 'a1-guided-lessons-17-20.js','a1-guided-lessons-21-24.js','a1-guided-lessons-25-28.js'];
+ 'a1-guided-lessons-17-20.js','a1-guided-lessons-21-24.js',
+ 'a1-guided-lessons-25-28.js','a1-guided-lessons-29-30.js'];
 for(const name of unitScripts)runInNewContext(read(name),context,{filename:name});
 
 const coursesText=book.match(/const courses=(\{[\s\S]*?\});\nconst dialogueTranslations=/)?.[1];
@@ -26,7 +27,8 @@ const extensions=[
  context.window.TanmuhelyA1Units13to16,
  context.window.TanmuhelyA1Units17to20,
  context.window.TanmuhelyA1Units21to24,
- context.window.TanmuhelyA1Units25to28
+ context.window.TanmuhelyA1Units25to28,
+ context.window.TanmuhelyA1Units29to30
 ];
 for(const extension of extensions){
  if(!extension)throw Error('Hiányzó A1-es leckecsokor.');
@@ -42,6 +44,9 @@ if(firstLessonCorrections){
  const setup=runInNewContext(`(function(courses){${firstLessonCorrections}; improveA1Foundations()})`);
  setup(courses);
 }
+const earlyExampleCorrections=book.match(/function improveEarlyA1CardExamples\(\)\{[\s\S]*?\n\}/)?.[0];
+if(!earlyExampleCorrections)throw Error('Hiányoznak a kezdő kártyák tanári példamondatai.');
+runInNewContext(`(function(courses){${earlyExampleCorrections}; improveEarlyA1CardExamples()})`)(courses);
 
 const blockers=[];
 const reviews=[];
@@ -53,9 +58,9 @@ const knownWords=new Set(context.window.MAGYAR_OROSZ_DATA.A1.map(row=>row[0].toL
 const taught=new Set();
 const allTaught=new Set();
 const titles=new Set();
-let totalNew=0,overloaded=0;
+let totalNew=0,overloaded=0,familyRequiredNew=0,familyOptionalNew=0,dailyRequiredNew=0,dailyOptionalNew=0,relativesRequiredNew=0,relativesOptionalNew=0;
 
-if(courses.A1.length!==28)fail('A1','LESSON_COUNT',`A várt 28 helyett ${courses.A1.length} lecke szerepel.`);
+if(courses.A1.length!==30)fail('A1','LESSON_COUNT',`A várt 30 helyett ${courses.A1.length} lecke szerepel.`);
 if(courses.A2.length!==3)fail('A2','FROZEN_A2','Az A2-es leckék száma módosult.');
 const rowFn=book.match(/function rows\(\)\{[\s\S]*?\nreturn result\}/)?.[0];
 if(!rowFn)fail('A1','CARD_RENDERER','A szókártyák előállító függvénye nem ellenőrizhető.');
@@ -65,6 +70,9 @@ for(const [index,lesson] of courses.A1.entries()){
  if(!lesson.title||titles.has(lesson.title))fail(id,'TITLE','Üres vagy ismétlődő leckecím.');
  titles.add(lesson.title);
  if(!Array.isArray(lesson.words)||lesson.words.length<5||lesson.words.length>20)fail(id,'WORD_LOAD','A szókártyák száma nincs 5 és 20 között.');
+ const coreCount=lesson.coreCount??Math.min(10,lesson.words.length);
+ if(!Number.isInteger(coreCount)||coreCount<5||coreCount>Math.min(10,lesson.words.length))
+  fail(id,'CORE_COUNT','A kötelező szókártyák száma nem ellenőrizhető vagy kívül esik az 5–10 közötti tartományon.');
  if(!unique(lesson.words))fail(id,'DUPLICATE_WORD','Azonos szó kétszer szerepel az egy leckén belüli szókártyalistában.');
  const extras=new Map((lesson.extra||[]).map(row=>[String(row[0]).toLocaleLowerCase('hu-HU'),row]));
  if(extras.size!==(lesson.extra||[]).length)fail(id,'DUPLICATE_EXTRA','Az új kifejezés többször szerepel a leckében.');
@@ -78,6 +86,33 @@ for(const [index,lesson] of courses.A1.entries()){
   if(row.length!==4||row.some(value=>typeof value!=='string'||!value.trim()))fail(id,'EXTRA_TRANSLATION','Hiányos magyar–orosz szókártya vagy példamondat.');
  }
  const newWords=lesson.words.filter(word=>!taught.has(word.toLocaleLowerCase('hu-HU')));
+ if(index===2){
+  familyRequiredNew=lesson.words.slice(0,coreCount).filter(word=>!taught.has(word.toLocaleLowerCase('hu-HU'))).length;
+  familyOptionalNew=newWords.length-familyRequiredNew;
+  if(coreCount!==8||lesson.words[8]!=='barát'||lesson.words[9]!=='testvér')
+   fail(id,'FAMILY_CORE','A családlecke kötelező nyolc szava vagy a két eredeti helyű opcionális szó megváltozott.');
+ }
+ if(index===5){
+  dailyRequiredNew=lesson.words.slice(0,coreCount).filter(word=>!taught.has(word.toLocaleLowerCase('hu-HU'))).length;
+  dailyOptionalNew=newWords.length-dailyRequiredNew;
+  const mandatoryText=[...lesson.grammar,...lesson.dialogue,...lesson.reading.lines.map(line=>line[0]),...lesson.composition].join(' ').toLocaleLowerCase('hu-HU');
+  if(coreCount!==8||lesson.words[8]!=='sétál'||lesson.words[9]!=='mindennap'||/sétál|mindennap/.test(mandatoryText))
+   fail(id,'DAILY_CORE','A napirendlecke nyolc kötelező szava és két opcionális szava nem illeszkedik a tanított mintákhoz.');
+ }
+ if(index===12){
+  relativesRequiredNew=lesson.words.slice(0,coreCount).filter(word=>!taught.has(word.toLocaleLowerCase('hu-HU'))).length;
+  relativesOptionalNew=newWords.length-relativesRequiredNew;
+  const mandatoryText=[...lesson.grammar,...lesson.dialogue,...lesson.reading.lines.map(line=>line[0]),...lesson.composition].join(' ').toLocaleLowerCase('hu-HU');
+  if(coreCount!==8||lesson.words[8]!=='férj'||lesson.words[9]!=='feleség'||lesson.words[10]!=='család'||/férj|feleség/.test(mandatoryText))
+   fail(id,'RELATIVES_CORE','A rokonságlecke opcionális szavai vagy a kötelező minták megváltoztak.');
+ }
+ if(index===13&&(
+  lesson.wordPreviewCount!==5||!lesson.preparation?.[4]?.[0]?.includes('étteremben')
+ ))fail(id,'WORKPLACE_PRETEACH','Az étteremben szóalakhoz hiányzik az ötödik, előre hallgatható, oroszul magyarázott minta.');
+ if(index===14&&(
+  lesson.wordPreviewCount!==5||!lesson.preparation?.[0]?.[0]?.includes('új')||
+  !lesson.preparation?.[3]?.[0]?.includes('nem')||!lesson.preparation?.[4]?.[0]?.includes('nagyon')
+ ))fail(id,'DESCRIPTION_PRETEACH','Az új, nem, nagyon szavak kötelező használata előtt nincs meg az öt kétnyelvű minta.');
  totalNew+=newWords.length;
  if(newWords.length>8){
   overloaded++;
@@ -106,10 +141,18 @@ const intro=courses.A1[0].grammar?.[1]||'';
 if(!/в русском языке (нет|отсутствуют) артикл/i.test(intro)||!/a\/az/i.test(intro)||!/a\s*[–-]\s*á/.test(intro)||!/e\s*[–-]\s*é/.test(intro))
  fail('A1:0','RUSSIAN_STARTER_BRIDGE','A magyar névelőket és az a–á, e–é hangkülönbségeket nem tanítjuk kifejezetten orosz kezdőknek.');
 if(!book.includes('placeReadingAfterTeaching()')||!book.includes('writing.prepend(panel)'))fail('A1','READING_ORDER','A szövegértés nem bizonyíthatóan követi a tanítást.');
+if(!book.includes('function renderA1WordPreview()')||!book.includes('renderWords();renderA1WordPreview();renderGrammarExamples()')||!book.includes('prepared.slice(0,previewCount)')||!book.includes('const started=say(hu)'))
+ fail('A1','BEGINNER_WORD_PREVIEW','A három kétnyelvű, meghallgatható tanári mondatminta nem jelenik meg a szókártyák előtt.');
 if(!book.includes('function requiredCardsSeen()')||!book.includes("if(level==='A1')testOrder=initialTestOrder()")||!book.includes("const distractors=level==='A1'?w.slice(0,requiredCardCount()):w"))
  fail('A1','UNTAUGHT_QUIZ_WORD','A záróteszt olyan A1-es szót vagy válaszlehetőséget is kérdezhet, amelynek jelentését előbb nem kellett megismerni.');
 if(!book.includes('function cardChunks()')||!book.includes('function renderCardCheckpoint()')||!book.includes('a1CheckedBatches'))
  fail('A1','OVERLOADED_CARDS','A kötelező A1-es szókártyák nem tanulhatók két ötszavas egységben, külön visszakérdezéssel.');
+if(!book.includes('function resumeA1CardIndex()')||!book.includes('restoreCheckpoint();cardIndex=resumeA1CardIndex()')||!book.includes("pause.id='a1CardBreak'")||!book.includes('checkedBatches.has(0)||fastTrackPacks.has(0)'))
+ fail('A1','FIVE_WORD_RESUME','Az első ötszavas blokk után nincs menthető szünet, vagy újranyitáskor nem áll vissza a befejezetlen kártya.');
+if(!book.includes('a1FastTrackPacks:[...fastTrackPacks]')||!book.includes('fastTrackPacks.add(part)')||!book.includes('fastTrackPacks.has(i)||(checkedBatches.has(i)'))
+ fail('A1','PARTIAL_KNOWN_WORDS','Az ismert ötszavas csoport nem ugorható át külön, vagy a részleges ellenőrzés nincs biztonságosan mentve.');
+if(!book.includes('function quizQuestionCount()')||!book.includes('quizTargetCount=quizQuestionCount()')||!book.includes('saved.count===undefined?Math.min(10,saved.order.length):saved.count')||!book.includes('max=quizTargetCount,current={score:testCorrect,max,'))
+ fail('A1','LEGACY_QUIZ_LENGTH','A csökkentett kötelező szóanyag zárótesztje vagy a régi tízkérdéses teszt mentése nem biztonságos.');
 if(!book.includes("const KEY='magyarorosz.lesson-route.v1'")||!book.includes("const checkpointKey='magyarorosz.lesson-checkpoint.v1'"))fail('A1','SAVED_PROGRESS','A korábbi leckék és részfeladatok mentési kulcsa módosult.');
 if(!book.includes('randomOrder(reading.options.map')||!book.includes('randomOrder(c.a.map'))fail('A1','ANSWER_ORDER','A választási lehetőségek sorrendje nem keveredik.');
 if(!/src="lesson-book\.js\?v=[^\"]+"/.test(html))fail('A1','PUBLISHED_SCRIPT','A tanulói oldalon nincs gyorsítótár-verziózott leckemotor.');
@@ -121,6 +164,9 @@ flag('A1','HUMAN_REVIEW','A teljes magyar–orosz nyelvi helyességet, a több e
 
 console.log(`A1 KIADÁS ELŐTTI AUDIT · ${courses.A1.length} lecke · ${totalNew} első alkalommal előforduló alapszókártya · ${allTaught.size} különböző szó/kifejezés az extrákkal`);
 console.log(`KRITIKUS: ${blockers.length} · FELÜLVIZSGÁLANDÓ: ${reviews.length} · TÚLTERHELT SZÓKINCSELSŐSÉG: ${overloaded} lecke`);
+console.log(`CSALÁDLECKE PILOT: ${familyRequiredNew} új kötelező szó · ${familyOptionalNew} új, választható szó (eredeti kártyaindexekkel; a 13-as figyelmeztetés továbbra is minden új szót számol).`);
+console.log(`NAPIRANDLECKE PILOT: ${dailyRequiredNew} új kötelező szó · ${dailyOptionalNew} új, választható szó (eredeti kártyaindexekkel).`);
+console.log(`ROKONSÁGLECKE PILOT: ${relativesRequiredNew} új kötelező szó · ${relativesOptionalNew} új, választható szó (eredeti kártyaindexekkel; a család szó ismétlésként megmarad).`);
 for(const issue of blockers)console.log(`HIBA | ${issue.lesson} | ${issue.code} | ${issue.message}`);
 for(const issue of reviews)console.log(`FIGYELMEZTETÉS | ${issue.lesson} | ${issue.code} | ${issue.message}`);
 console.log('Megjegyzés: a strukturális PASS nem jelent hitelesített fordítást vagy igazolt A1-es nyelvtudást.');
