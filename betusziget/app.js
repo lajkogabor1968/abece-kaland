@@ -38,13 +38,30 @@ function summaryQueue(grade){
 }
 const examLink=new URLSearchParams(location.search).get('dolgozat')==='7-56';
 const examKey='betusziget-dolgozat-7-56-20261124';
+const SCHOOL_RECEIVER=''; // A tanári Apps Script /exec URL-je, telepítés után.
+function examId(){return globalThis.crypto?.randomUUID?.()||('exam-'+Date.now()+'-'+Math.random().toString(36).slice(2));}
+function schoolPayload(s){return {id:s.attemptId,name:s.student,away:s.away||0,answers:s.results.map(r=>({id:r.id,raw:r.raw,skipped:!!r.skipped}))};}
+function sendSchool(){
+ const s=session;if(!s?.school||!s.finished||s.sent||s.sending)return;
+ if(!SCHOOL_RECEIVER){toast('A Google-táblázat összekötése még nincs aktiválva.');return;}
+ if(s.results.some(r=>typeof r.raw!=='string')){toast('Régebbi dolgozat: hiányoznak a pontos válaszok.');return;}
+ s.sending=true;renderResult();
+ const frame=document.createElement('iframe');frame.name='schoolReceiver';frame.hidden=true;document.body.appendChild(frame);
+ const form=document.createElement('form');form.hidden=true;form.method='POST';form.action=SCHOOL_RECEIVER;form.target=frame.name;
+ const input=document.createElement('input');input.name='payload';input.value=JSON.stringify(schoolPayload(s));form.appendChild(input);document.body.appendChild(form);
+ let timer;const clean=()=>{clearTimeout(timer);window.removeEventListener('message',receive);form.remove();frame.remove();s.sending=false;};
+ const receive=e=>{if(!/^https:\/\/(?:[a-z0-9-]+\.)*googleusercontent\.com$/.test(e.origin)&&e.origin!=='https://script.google.com')return;if(e.data?.id!==s.attemptId)return;clean();if(e.data.ok&&Number.isInteger(e.data.score)&&e.data.score>=0&&e.data.score<=40){s.sent=true;s.serverScore=e.data.score;examSave();}else toast('A szerver nem fogadta el a mentést. Szólj a tanárnak!');renderResult();};
+ window.addEventListener('message',receive);timer=setTimeout(()=>{clean();toast('Nincs szerver-visszaigazolás. Próbáld újra!');renderResult();},30000);form.submit();
+}
+function backupSchool(){const s=session;if(!s?.school||!s.finished)return;const blob=new Blob([JSON.stringify(schoolPayload(s),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Betusziget-'+s.attemptId+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+
 function examRead(){try{return JSON.parse(localStorage.getItem(examKey)||'null');}catch(e){return null;}}
 function examWrite(x){try{localStorage.setItem(examKey,JSON.stringify(x));return true;}catch(e){return false;}}
-function examSave(){if(!session?.school)return true;const s=session;return examWrite({name:s.student,ids:s.queue.map(q=>q.id),index:s.index,results:s.results.map(r=>({id:r.id,exact:r.exact&&!r.skipped,skipped:r.skipped})),finished:s.finished,started:s.started,away:s.away||0});}
+function examSave(){if(!session?.school)return true;const s=session;return examWrite({name:s.student,attemptId:s.attemptId,ids:s.queue.map(q=>q.id),index:s.index,results:s.results.map(r=>({id:r.id,raw:r.raw,exact:r.exact&&!r.skipped,skipped:r.skipped})),finished:s.finished,started:s.started,away:s.away||0,sent:!!s.sent,serverScore:s.serverScore});}
 function schoolSetup(){
  const old=examRead();
  if(old&&Array.isArray(old.ids)&&old.ids.length===40&&old.ids.every(id=>itemById.has(id))){
-  const queue=old.ids.map(id=>itemById.get(id));session={queue,index:Math.min(old.index,39),results:old.results||[],mode:'summary',label:'7. osztály – dolgozat az 5–6. osztály anyagából',school:true,student:old.name,started:old.started,away:old.away||0,finished:old.finished,selected:null,ordered:[],submitted:false,hint:false,repair:false,heard:false,challenge:false};
+  const queue=old.ids.map(id=>itemById.get(id));session={queue,index:Math.min(old.index,39),results:old.results||[],mode:'summary',label:'7. osztály – dolgozat az 5–6. osztály anyagából',school:true,student:old.name,attemptId:old.attemptId||examId(),sent:!!old.sent,serverScore:old.serverScore,started:old.started,away:old.away||0,finished:old.finished,selected:null,ordered:[],submitted:false,hint:false,repair:false,heard:false,challenge:false};
   if(session.finished||session.results.length===40){session.finished=true;view='result';renderResult();return;}
   session.index=session.results.length;view='play';renderQuestion();return;
  }
@@ -54,8 +71,8 @@ function schoolStart(){
  const name=$('#studentName')?.value.trim();if(!name){toast('Írd be a teljes neved!');return;}
  if(examRead()){schoolSetup();return;}
  const queue=summaryQueue(6);if(queue.length!==40)return;
- if(!examWrite({name,ids:queue.map(q=>q.id),index:0,results:[],finished:false,started:Date.now(),away:0})){toast('A mentés nem működik. Szólj a tanárnak!');return;}
- begin(queue,'summary','7. osztály – dolgozat az 5–6. osztály anyagából',false,{school:true,student:name,away:0});
+ const attemptId=examId();if(!examWrite({name,attemptId,ids:queue.map(q=>q.id),index:0,results:[],finished:false,started:Date.now(),away:0})){toast('A mentés nem működik. Szólj a tanárnak!');return;}
+ begin(queue,'summary','7. osztály – dolgozat az 5–6. osztály anyagából',false,{school:true,student:name,attemptId,away:0});
 }
 function startSummary(){
  const grade=profile().grade,queue=summaryQueue(grade);
@@ -151,7 +168,7 @@ function submit(skipped=false){
  if(q.type==='order'&&!skipped&&s.ordered.length!==q.words.length){toast('Előbb rendezd sorba az összes szót!');return;}
  const input=skipped?'':q.type==='order'?s.ordered.map(i=>s.options[i]).join(' → '):isChoice(q)?s.selected===null?'':s.options[s.selected]:$('#answer').value;
  if(!skipped&&!norm(input)){toast(isChoice(q)?'Először válassz egy alapelvet!':'Először írd be a válaszod!');return;}
- stopAudio();const r={...assess(q,input),id:q.id,hint:s.hint,skipped};s.results.push(r);s.submitted=true;
+ stopAudio();const r={...assess(q,input),id:q.id,raw:input,hint:s.hint,skipped};s.results.push(r);s.submitted=true;
  if(s.mode==='summary'){if(skipped)r.exact=false;if(s.school&&!examSave()){s.results.pop();s.submitted=false;toast('Nem sikerült menteni. Szólj a tanárnak!');return;}next();return;}
  if(!s.blind)recordResponse(q,r,s.hint);save();renderQuestion();
  if(r.exact&&db.sound&&!s.blind)chime();
@@ -163,8 +180,8 @@ function recordResponse(q,r,hinted=false){
 }
 function repair(){if(!session?.submitted)return;const q=session.queue[session.index];if(assess(q,$('#repair').value).exact){session.repair=true;$('#repair').disabled=true;$('[data-action="repair"]').disabled=true;$('[data-action="repair"]').textContent='✓ Javítás kész';$('[data-action="next"]').disabled=false;$('#repairStatus').textContent='Ügyes javítás! Később segítség nélkül is térj vissza rá.';}else{$('#repairStatus').textContent='Még eltér a mintától. Nézd meg az ékezeteket és a betűket!';$('#repair').focus();}}
 function next(){const s=session;if(!s?.submitted)return;const r=s.results[s.index];if(!r.exact&&s.mode==='practice'&&s.queue[s.index].type!=='order'&&!s.repair)return;stopAudio();if(s.index===s.queue.length-1){finish();return;}s.index++;s.submitted=false;s.selected=null;s.ordered=[];s.hint=false;s.repair=false;s.heard=false;renderQuestion();window.scrollTo(0,0);}
-function finish(){const s=session,p=profile();if(s.finished)return;if(s.blind)s.results.forEach((r,i)=>recordResponse(s.queue[i],r,r.hint));s.finished=true;s.ended=Date.now();if(s.school){examSave();view='result';renderResult();window.scrollTo(0,0);return;}const ok=s.results.filter(r=>r.exact).length;p.days[today()]=true;p.history.unshift({date:new Date().toISOString(),grade:p.grade,mode:s.mode,label:s.label,total:s.results.length,ok,wordCorrect:s.results.reduce((n,r)=>n+r.wordCorrect,0),wordTotal:s.results.reduce((n,r)=>n+r.wordTotal,0),seconds:Math.round((s.ended-s.started)/1000),hint:s.results.filter(r=>r.hint).length});p.history=p.history.slice(0,80);save();view='result';renderResult();window.scrollTo(0,0);if(ok/s.results.length>=.8)celebrate();}
-function renderResult(){const s=session;if(!s)return go('home');if(s.mode==='summary'){const ok=s.results.filter(r=>r.exact).length,total=s.queue.length,pct=ok/total*100;shell(`<section class="intro"><div class="card result"><div class="eyebrow">${esc(s.label)}</div><h1>Teszt befejezve</h1><div class="big-score">${pct.toLocaleString('hu-HU',{maximumFractionDigits:1})}<small>%</small></div><p>Elért pontszám: <strong>${ok} / ${total}</strong></p>${s.school?`<p>Név: <strong>${esc(s.student)}</strong></p><p>Oldalelhagyási jelzések: ${s.away||0} (önmagában nem bizonyít csalást).</p>`:'<button class="btn secondary" data-action="nav" data-view="home">Vissza a térképre</button>'}</div></section>`);return;}const ok=s.results.filter(r=>r.exact).length,pct=Math.round(ok/s.results.length*100),wrong=s.results.filter(r=>!r.exact);const w=s.results.reduce((n,r)=>n+r.wordCorrect,0),wt=s.results.reduce((n,r)=>n+r.wordTotal,0);
+function finish(){const s=session,p=profile();if(s.finished)return;if(s.blind)s.results.forEach((r,i)=>recordResponse(s.queue[i],r,r.hint));s.finished=true;s.ended=Date.now();if(s.school){examSave();view='result';renderResult();window.scrollTo(0,0);if(SCHOOL_RECEIVER)sendSchool();return;}const ok=s.results.filter(r=>r.exact).length;p.days[today()]=true;p.history.unshift({date:new Date().toISOString(),grade:p.grade,mode:s.mode,label:s.label,total:s.results.length,ok,wordCorrect:s.results.reduce((n,r)=>n+r.wordCorrect,0),wordTotal:s.results.reduce((n,r)=>n+r.wordTotal,0),seconds:Math.round((s.ended-s.started)/1000),hint:s.results.filter(r=>r.hint).length});p.history=p.history.slice(0,80);save();view='result';renderResult();window.scrollTo(0,0);if(ok/s.results.length>=.8)celebrate();}
+function renderResult(){const s=session;if(!s)return go('home');if(s.mode==='summary'){const ok=s.school&&s.sent?s.serverScore:s.results.filter(r=>r.exact).length,total=s.queue.length,pct=ok/total*100;shell(`<section class="intro"><div class="card result"><div class="eyebrow">${esc(s.label)}</div><h1>Teszt befejezve</h1><div class="big-score">${pct.toLocaleString('hu-HU',{maximumFractionDigits:1})}<small>%</small></div><p>Elért pontszám: <strong>${ok} / ${total}</strong></p>${s.school?`<p>Név: <strong>${esc(s.student)}</strong></p><p>Oldalelhagyási jelzések: ${s.away||0} (önmagában nem bizonyít csalást).</p><p role="status">${s.sent?'✓ Google-táblázatba mentve':s.sending?'Mentés folyamatban…':SCHOOL_RECEIVER?'Nincs visszaigazolt központi mentés.':'Központi mentés még nincs beállítva.'}</p>${!s.sent&&SCHOOL_RECEIVER&&!s.sending?'<button class="btn" data-action="schoolSend">Mentés újrapróbálása</button>':''}<button class="btn secondary" data-action="schoolBackup">Válaszok biztonsági mentése</button>`:'<button class="btn secondary" data-action="nav" data-view="home">Vissza a térképre</button>'}</div></section>`);return;}const ok=s.results.filter(r=>r.exact).length,pct=Math.round(ok/s.results.length*100),wrong=s.results.filter(r=>!r.exact);const w=s.results.reduce((n,r)=>n+r.wordCorrect,0),wt=s.results.reduce((n,r)=>n+r.wordTotal,0);
  shell(`<section class="intro"><div class="card result"><div class="eyebrow">${esc(s.label)} · KÜLDETÉS TELJESÍTVE</div><h1>${pct===100?'Ragyogóan pontos!':pct>=80?'Szép felfedezés!':'Már tudod, merre tovább.'}</h1><div class="big-score">${pct}<small>%</small></div><p class="muted">${ok} pontos első válasz a ${s.results.length} feladatból.</p><div class="result-grid"><div><strong>${ok}</strong><span>elsőre pontos</span></div><div><strong>${wrong.length}</strong><span>még gyakorlásra vár</span></div><div><strong>${s.results.filter(r=>r.hint).length}</strong><span>szabálysúgóval</span></div></div>${s.mode==='dictation'?`<p><strong>Szóegyezés: ${w}/${wt} (${Math.round(w/wt*100)}%).</strong><br><span class="tiny">A teljes mondat pontosságába a nagybetűk és írásjelek is beleszámítanak.</span></p>`:''}<div class="results-actions">${wrong.length?'<button class="btn orange" data-action="retry">Újra a nehezebb részeket ↻</button>':''}<button class="btn secondary" data-action="nav" data-view="home">Vissza a térképre</button><button class="btn secondary" data-action="export">Eredmény mentése</button></div><p class="tiny" style="margin:20px 0 0">Ez önellenőrző eredmény, nem iskolai érdemjegy. A javított válaszokat nem pontozzuk újra.</p></div>${s.passage?`<div class="card"><h2>A diktált teljes szöveg</h2><p class="full-text">${s.queue.map(q=>esc(q.answer)).join(' ')}</p><button class="btn secondary" data-action="listenWhole">Teljes szöveg meghallgatása</button><p id="audioStatus" class="tiny" role="status"></p></div>`:''}<div class="section-title"><h2>Mit viszel magaddal?</h2><p>Nyisd le a magyarázatokat!</p></div><div class="card">${s.results.map((r,i)=>{const q=itemById.get(r.id);return `<details class="review-row"><summary><span>${r.exact?'✓':'↻'}</span><span>${i+1}. ${esc(q.answer)}<small>${esc(topicById.get(q.topic).name)} · ${r.exact?'elsőre pontos':'újragyakorlásra vár'}</small></span></summary>${!r.exact?`<p>A válaszod: <span>${esc(r.actual||'Most nem tudtam.')}</span></p>`:''}<p>${esc(q.why)}</p></details>`;}).join('')}</div></section>`);
 }
 function retry(){if(session?.mode==='summary')return;const q=session.results.filter(r=>!r.exact).map(r=>itemById.get(r.id));begin(shuffle(q),q.every(x=>x.type==='dictation')?'dictation':'practice','Újra a nehezebb részeket',true);}
@@ -188,8 +205,10 @@ function exportResult(){if(session?.mode==='summary')return;const s=session;if(!
 function chime(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.setValueAtTime(523,ctx.currentTime);o.frequency.setValueAtTime(784,ctx.currentTime+.10);g.gain.setValueAtTime(.045,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.3);o.start();o.stop(ctx.currentTime+.31);o.onended=()=>ctx.close();}catch(e){}}
 function celebrate(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;for(let i=0;i<28;i++){const c=document.createElement('i');c.className='confetti';c.style.left=Math.random()*100+'%';c.style.background=['#9bbf73','#e9ad6c','#679d94','#d7df91'][i%4];c.style.animationDelay=Math.random()*.3+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),2100);}}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b||b.disabled)return;const a=b.dataset.action;
- if(examLink&&!['schoolStart','order','undoOrder','choose','accent','submit','skip'].includes(a))return;
+ if(examLink&&!['schoolStart','schoolSend','schoolBackup','order','undoOrder','choose','accent','submit','skip'].includes(a))return;
  if(a==='schoolStart')schoolStart();
+ else if(a==='schoolSend')sendSchool();
+ else if(a==='schoolBackup')backupSchool();
  else if(a==='nav')go(b.dataset.view);
  else if(a==='grade'){profile().grade=Number(b.dataset.grade);save();render();}
  else if(a==='setup')setup(b.dataset.mode);
