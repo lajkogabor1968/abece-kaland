@@ -28,7 +28,7 @@ function doPost(e){
       const q=map.get(a.id);
       if(!q||ids.has(a.id)||typeof a.raw!=='string'||a.raw.length>500||typeof a.skipped!=='boolean')throw Error('Érvénytelen válasz.');
       ids.add(a.id);covered.add(q.topic);
-      const point=!a.skipped&&[q.answer,...(q.accepted||[])].map(normalize).includes(normalize(a.raw))?1:0;
+      const point=scoreAnswer(q,a);
       return [p.id,now,literal(p.name),i+1,q.id,q.grade,literal(q.prompt),literal(a.raw),literal(q.answer),a.skipped?'Igen':'Nem',point];
     });
     if(topics.some(t=>!covered.has(t.id)))throw Error('Hiányzó témakör.');
@@ -51,4 +51,11 @@ function doPost(e){
 function reply(obj){
   const json=JSON.stringify(obj).replace(/</g,'\\u003c');
   return HtmlService.createHtmlOutput('<script>window.top.postMessage('+json+',"https://lajkogabor1968.github.io");</script>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function scoreAnswer(q,a){
+  if(a.skipped)return 0;
+  const actual=normalize(a.raw);
+  const sentence=q.type==='fix'||q.type==='dictation'||['date-009','date-010','sim7-001'].includes(q.id);
+  return [q.answer,...(q.accepted||[])].map(normalize).some(m=>m===actual||(sentence&&m.endsWith('.')&&!m.endsWith('...')&&actual===m.slice(0,-1)))?1:0;
 }
