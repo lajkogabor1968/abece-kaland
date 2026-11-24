@@ -38,7 +38,7 @@ function summaryQueue(grade){
 }
 const examLink=new URLSearchParams(location.search).get('dolgozat')==='7-56';
 const examKey='betusziget-dolgozat-7-56-20261124';
-const SCHOOL_RECEIVER=''; // A tanári Apps Script /exec URL-je, telepítés után.
+const SCHOOL_RECEIVER="https://script.google.com/macros/s/AKfycbxhZhH8TIfhuTrEgFhpZhBSlC0QWNmDqEqna3_2PqKpV9oqLQPPlT7OHyv9jDhEoic8/exec"; // A tanári Apps Script /exec URL-je, telepítés után.
 function examId(){return globalThis.crypto?.randomUUID?.()||('exam-'+Date.now()+'-'+Math.random().toString(36).slice(2));}
 function schoolPayload(s){return {id:s.attemptId,name:s.student,away:s.away||0,answers:s.results.map(r=>({id:r.id,raw:r.raw,skipped:!!r.skipped}))};}
 function sendSchool(){
