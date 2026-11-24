@@ -1,5 +1,5 @@
 // Betűsziget – az aranymajsás fiókban futtatandó Google Apps Script.
-const BANK_URL = 'https://raw.githubusercontent.com/lajkogabor1968/abece-kaland/62eff15dffac882586c3f681a5b353011a52357c/betusziget/bank.js';
+const BANK_URL = 'https://raw.githubusercontent.com/lajkogabor1968/abece-kaland/e23499cca9922cc4521908516f38e7c607a0e7e2/betusziget/bank.js';
 function setup() {
   const props=PropertiesService.getScriptProperties();
   if(props.getProperty('SHEET_ID')) { Logger.log(SpreadsheetApp.openById(props.getProperty('SHEET_ID')).getUrl()); return; }
@@ -19,10 +19,12 @@ function doPost(e){
   try {
     p=JSON.parse(e.parameter.payload||'{}');
     if(!/^[a-zA-Z0-9-]{16,80}$/.test(p.id)||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||!Array.isArray(p.answers)||p.answers.length!==40)throw Error('Érvénytelen dolgozat.');
+    const grade=Number(p.grade||7),maxGrade=Number(p.maxGrade||6);
+    if(![5,6,7,8].includes(grade)||!(maxGrade===grade||grade===7&&maxGrade===6))throw Error('Érvénytelen évfolyam.');
     const source=UrlFetchApp.fetch(BANK_URL).getContentText();
     const bank=JSON.parse(source.match(/const BANK = (.*?);\n/s)[1]);
-    const topics=JSON.parse(source.match(/const TOPICS = (.*?);\n/s)[1]).filter(t=>t.grade<=6);
-    const map=new Map(bank.filter(q=>q.grade<=6&&q.type!=='dictation').map(q=>[q.id,q]));
+    const topics=JSON.parse(source.match(/const TOPICS = (.*?);\n/s)[1]).filter(t=>t.grade<=maxGrade);
+    const map=new Map(bank.filter(q=>q.grade<=maxGrade&&q.type!=='dictation').map(q=>[q.id,q]));
     const ids=new Set(),covered=new Set(),now=new Date();
     const details=p.answers.map((a,i)=>{
       const q=map.get(a.id);
@@ -33,7 +35,7 @@ function doPost(e){
     });
     if(topics.some(t=>!covered.has(t.id)))throw Error('Hiányzó témakör.');
     const score=details.reduce((n,r)=>n+r[10],0);
-    const lock=LockService.getScriptLock();lock.waitLock(20000);
+    const lock=LockService.getScriptLock();lock.waitLock(60000);
     try {
       const ss=SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
       const s=ss.getSheetByName('Eredmények'),d=ss.getSheetByName('Részletes válaszok');
@@ -41,8 +43,10 @@ function doPost(e){
       if(found){const old=s.getRange(found.getRow(),5).getValue();return reply({id:p.id,ok:true,score:old});}
       const orphan=d.getRange('A:A').createTextFinder(p.id).matchEntireCell(true).findAll().map(x=>x.getRow()).sort((a,b)=>b-a);
       orphan.forEach(row=>d.deleteRow(row));
-      d.getRange(d.getLastRow()+1,1,40,11).setValues(details);
-      s.appendRow([p.id,now,literal(p.name),'7.',score,40,score/40,Math.max(0,Math.min(10000,Math.floor(Number(p.away)||0)))]);
+      const row=d.getLastRow()+1;
+      if(row+39>d.getMaxRows())d.insertRowsAfter(d.getMaxRows(),Math.max(400,row+39-d.getMaxRows()));
+      d.getRange(row,1,40,11).setValues(details);
+      s.appendRow([p.id,now,literal(p.name),grade+'.',score,40,score/40,Math.max(0,Math.min(10000,Math.floor(Number(p.away)||0)))]);
       SpreadsheetApp.flush();
       return reply({id:p.id,ok:true,score});
     } finally {lock.releaseLock();}
