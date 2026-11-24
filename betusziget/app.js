@@ -98,9 +98,11 @@ function schoolStart(){
  begin(queue,'summary',schoolLabel,false,{school:true,student:name,studentClass,studentStatus:status,attemptId,away:0});
 }
 function startSummary(){
- const grade=profile().grade,queue=summaryQueue(grade);
- if(queue.length!==40){toast('Nem áll rendelkezésre 40 feladat.');return;}
- begin(queue,'summary',grade+'. osztály – összefoglaló teszt',false,{grade});
+ const url=new URL(location.href);
+ url.searchParams.set('dolgozat',String(profile().grade));
+ url.searchParams.delete('kor');
+ url.searchParams.delete('osztaly');
+ location.assign(url.href);
 }
 function renderSummarySetup(){
  shell(`<section class="intro"><button class="back-link" data-action="nav" data-view="home">← Vissza a térképre</button><div class="card"><div class="eyebrow">${profile().grade}. OSZTÁLY · 40 PONT</div><h1>Összefoglaló teszt</h1><p>Minden elérhető témakörből kapsz önállóan, hanganyag nélkül megoldható feladatot. A kérdések sorrendje és válogatása változik.</p><p>Minden helyes válasz 1 pont. Nincs súgó, nincs javítás és nincs megoldókulcs. A végén csak a pontszámodat és a százalékos eredményedet látod. A kihagyott feladat 0 pont.</p><button class="btn" data-action="summaryStart">Teszt indítása →</button></div></section>`);
@@ -245,7 +247,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-acti
  else if(a==='nav')go(b.dataset.view);
  else if(a==='grade'){profile().grade=Number(b.dataset.grade);save();render();}
  else if(a==='setup')setup(b.dataset.mode);
- else if(a==='summarySetup')go('summarySetup');
+ else if(a==='summarySetup')startSummary();
  else if(a==='summaryStart')startSummary();
  else if(a==='topic')setup('practice',b.dataset.topic);
  else if(a==='topicExam')setup('exam',b.dataset.topic,true);
