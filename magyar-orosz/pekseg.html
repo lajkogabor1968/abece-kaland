@@ -1,5 +1,13 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ru"><head>
+<script>
+if (location.origin === "https://lajkogabor1968.github.io" && location.pathname.startsWith("/abece-kaland/magyar-orosz/")) {
+  const destination = new URL(location.href);
+  destination.pathname = destination.pathname.slice("/abece-kaland".length);
+  location.replace(destination.href);
+}
+</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>В пекарне · Венгерский A1</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f6f8f4;color:#203e32;font:1.08rem/1.55 system-ui,sans-serif}

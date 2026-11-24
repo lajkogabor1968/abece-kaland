@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="hu">
 <head>
+<script>
+if (location.origin === "https://lajkogabor1968.github.io" && location.pathname.startsWith("/abece-kaland/magyar-orosz/")) {
+  const destination = new URL(location.href);
+  destination.pathname = destination.pathname.slice("/abece-kaland".length);
+  location.replace(destination.href);
+}
+</script>
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#17464b">
