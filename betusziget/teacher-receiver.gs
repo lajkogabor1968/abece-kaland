@@ -39,6 +39,7 @@ function doPost(e){
     try {
       const ss=SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
       const s=ss.getSheetByName('Eredmények'),d=ss.getSheetByName('Részletes válaszok');
+      s.getRange('I1:K1').setValues([['SNI / BTMN','Évfolyam','Mért tananyag']]);
       const found=s.getRange('A:A').createTextFinder(p.id).matchEntireCell(true).findNext();
       if(found){const old=s.getRange(found.getRow(),5).getValue();return reply({id:p.id,ok:true,score:old});}
       const orphan=d.getRange('A:A').createTextFinder(p.id).matchEntireCell(true).findAll().map(x=>x.getRow()).sort((a,b)=>b-a);
@@ -46,11 +47,11 @@ function doPost(e){
       const row=d.getLastRow()+1;
       if(row+39>d.getMaxRows())d.insertRowsAfter(d.getMaxRows(),Math.max(400,row+39-d.getMaxRows()));
       d.getRange(row,1,40,11).setValues(details);
-      s.appendRow([p.id,now,literal(p.name),grade+'.',score,40,score/40,Math.max(0,Math.min(10000,Math.floor(Number(p.away)||0)))]);
+      s.appendRow([p.id,now,literal(p.name),literal(String(p.studentClass||grade+'.').slice(0,20)),score,40,score/40,Math.max(0,Math.min(10000,Math.floor(Number(p.away)||0))),['SNI','BTMN','Egyik sem'].includes(p.status)?p.status:'Nincs megadva',grade,maxGrade===5?'5.':'5–'+maxGrade+'.']);
       SpreadsheetApp.flush();
       return reply({id:p.id,ok:true,score});
     } finally {lock.releaseLock();}
-  }catch(err){return reply({id:p&&p.id||'',ok:false});}
+  }catch(err){console.error(String(err));return reply({id:p&&p.id||'',ok:false});}
 }
 function reply(obj){
   const json=JSON.stringify(obj).replace(/</g,'\\u003c');
