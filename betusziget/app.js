@@ -26,8 +26,7 @@ function summaryQueue(grade){
  const topics=TOPICS.filter(t=>t.grade<=grade);
  const groups=topics.map(t=>({topic:t,items:shuffle(BANK.filter(q=>q.topic===t.id&&q.grade<=grade))})).filter(g=>g.items.length);
  const chosen=groups.map(g=>g.items.shift());
- const dict=shuffle(DICTATIONS.filter(q=>q.grade===grade));
- chosen.push(...dict.slice(0,4));
+
  while(chosen.length<40){
   const current=groups.filter(g=>g.items.length&&g.topic.grade===grade);
   const others=groups.filter(g=>g.items.length&&g.topic.grade<grade);
@@ -43,7 +42,7 @@ function startSummary(){
  begin(queue,'summary',grade+'. osztály – összefoglaló teszt',false,{grade});
 }
 function renderSummarySetup(){
- shell(`<section class="intro"><button class="back-link" data-action="nav" data-view="home">← Vissza a térképre</button><div class="card"><div class="eyebrow">${profile().grade}. OSZTÁLY · 40 PONT</div><h1>Összefoglaló teszt</h1><p>Minden elérhető témakörből kapsz feladatot, köztük négy hangos tollbamondást. A kérdések sorrendje és válogatása változik.</p><p>Minden helyes válasz 1 pont. Nincs súgó, nincs javítás és nincs megoldókulcs. A végén csak a pontszámodat és a százalékos eredményedet látod. A kihagyott feladat 0 pont.</p><button class="btn" data-action="summaryStart">Teszt indítása →</button></div></section>`);
+ shell(`<section class="intro"><button class="back-link" data-action="nav" data-view="home">← Vissza a térképre</button><div class="card"><div class="eyebrow">${profile().grade}. OSZTÁLY · 40 PONT</div><h1>Összefoglaló teszt</h1><p>Minden elérhető témakörből kapsz önállóan, hanganyag nélkül megoldható feladatot. A kérdések sorrendje és válogatása változik.</p><p>Minden helyes válasz 1 pont. Nincs súgó, nincs javítás és nincs megoldókulcs. A végén csak a pontszámodat és a százalékos eredményedet látod. A kihagyott feladat 0 pont.</p><button class="btn" data-action="summaryStart">Teszt indítása →</button></div></section>`);
 }
 function makeQueue(mode,topic,count,challenge=false,daily=false){
  let pool=availableItems(mode).filter(q=>topic==='all'||q.topic===topic);
