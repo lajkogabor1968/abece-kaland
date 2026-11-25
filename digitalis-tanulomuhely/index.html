@@ -5,6 +5,7 @@
 <meta name="theme-color" content="#183e52"><title>Digitális Tanulóműhely</title>
 <style>
 :root{color-scheme:light;--ink:#173447;--muted:#526777;--accent:#14695e;--line:#d9e3e5;--bg:#f5f8f8;--white:#fff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,Arial,sans-serif}a{color:var(--accent)}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #b36c00;outline-offset:4px}.wrap{max-width:1100px;margin:auto;padding:0 24px}header{background:#183e52;color:white;padding:36px 0 32px}header p{color:#d9edef;max-width:62ch;margin:12px 0 0}header h1{font-size:clamp(2rem,5vw,3.3rem);line-height:1.12;margin:8px 0;letter-spacing:-.035em}.eyebrow{font-size:.8rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700}main{padding:28px 0 48px}h2{font-size:1.35rem;margin:0 0 12px}h3{font-size:1.1rem;margin:0}p{margin:8px 0}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}button,input{font:inherit}button{border:1px solid var(--line);border-radius:9px;padding:10px 15px;color:var(--ink);background:white;cursor:pointer}button[aria-pressed=true]{background:var(--accent);color:white;border-color:var(--accent)}input[type=search]{padding:13px 16px;border:1px solid #a8babb;border-radius:10px;width:min(100%,540px);background:white;color:var(--ink);font-size:1rem}.category{margin:0 0 30px;border-bottom:1px solid var(--line);padding-bottom:20px}.grade-group{border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:12px 15px;background:#edf3f4}.grade-group>summary{font-size:1.05rem;font-weight:700;cursor:pointer;padding:5px 0}.grade-group .grid{margin-top:12px}.toolbar select{font:inherit;padding:10px;border:1px solid #a8babb;border-radius:8px;background:white;color:var(--ink)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:14px}.tile{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:21px;border:1px solid var(--line);border-radius:15px;background:white;min-height:180px}.tile p{color:var(--muted);margin:0}.tag{font-size:.79rem;font-weight:700;color:var(--accent)}.tile a{margin-top:auto;display:inline-block;text-decoration:none;font-weight:700;border-radius:8px;background:var(--accent);color:white;padding:10px 13px}.tile a:hover{background:#0d5149}.planned{border-style:dashed;background:#f8fafb;min-height:140px}.planned .tag{color:var(--muted)}.teacher{border:1px solid var(--line);border-radius:14px;background:white;padding:22px;margin-top:30px}.teacher a{display:inline-block;margin:7px 16px 7px 0;font-weight:700}footer{border-top:1px solid var(--line);padding:20px 0;color:var(--muted);font-size:.88rem}.sr{position:absolute;left:-10000px}.skip:focus{left:10px;top:10px;background:white;padding:10px;z-index:9}.hide,[hidden]{display:none!important}@media(max-width:500px){.wrap{padding:0 16px}header{padding:27px 0}.tile{min-height:0}.toolbar button{flex:1 1 auto}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+.grade-links{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}.grade-links a{display:inline-block;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:white;color:var(--accent);font-weight:700;text-decoration:none}.grade-links a:hover{border-color:var(--accent);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -12,6 +13,7 @@
 <header><div class="wrap"><div class="eyebrow">Tanulás · Gyakorlás · Fejlődés</div><h1>Digitális Tanulóműhely</h1><p>Válassz tantárgyat vagy tanfolyamot! Önálló tanulás, interaktív feladatok és játékok egy helyen.</p></div></header>
 <main class="wrap" id="main">
 <label for="search"><strong>Alkalmazás keresése</strong></label><br><input type="search" id="search" placeholder="Pl. angol, helyesírás, 7. osztály, A1">
+<nav class="grade-links" aria-label="Betűsziget évfolyamonként"><strong>Betűsziget</strong><a href="../betusziget/?osztaly=5">5. osztály</a><a href="../betusziget/?osztaly=6">6. osztály</a><a href="../betusziget/?osztaly=7">7. osztály</a><a href="../betusziget/?osztaly=8">8. osztály</a></nav>
 <div class="toolbar" role="group" aria-label="Tantárgyak"><button data-filter="all" aria-pressed="true">Mind</button><button data-filter="en" aria-pressed="false">Angol</button><button data-filter="grammar" aria-pressed="false">Magyar nyelvtan</button><button data-filter="lit" aria-pressed="false">Irodalom</button><button data-filter="hu" aria-pressed="false">Magyar mint idegen nyelv</button><button data-filter="chem" aria-pressed="false">Kémia</button></div>
 <div class="toolbar"><label for="grade"><strong>Évfolyam / nyelvi szint:</strong></label><select id="grade"><option value="all">Mindegyik</option></select></div><p id="result" role="status"></p>
 <div id="catalog"></div>
@@ -118,7 +120,7 @@ const catalog=[
             "Betűsziget",
             "Interaktív alkalmazás",
             "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
-            "abece-kaland/betusziget/"
+            "abece-kaland/betusziget/?osztaly=5"
           ],
           [
             "Ábécé-kaland",
@@ -154,7 +156,7 @@ const catalog=[
             "Betűsziget",
             "Interaktív alkalmazás",
             "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
-            "abece-kaland/betusziget/"
+            "abece-kaland/betusziget/?osztaly=6"
           ],
           [
             "Az igekötők",
@@ -172,7 +174,7 @@ const catalog=[
             "Betűsziget",
             "Interaktív alkalmazás",
             "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
-            "abece-kaland/betusziget/"
+            "abece-kaland/betusziget/?osztaly=7"
           ],
           [
             "Az egyszerű mondat szerkezete",
@@ -190,7 +192,7 @@ const catalog=[
             "Betűsziget",
             "Interaktív alkalmazás",
             "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
-            "abece-kaland/betusziget/"
+            "abece-kaland/betusziget/?osztaly=8"
           ]
         ]
       ]
