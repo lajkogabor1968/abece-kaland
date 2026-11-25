@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#183e52"><title>Digitális Tanulóműhely</title>
+<style>
+:root{color-scheme:light;--ink:#173447;--muted:#526777;--accent:#14695e;--line:#d9e3e5;--bg:#f5f8f8;--white:#fff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,Arial,sans-serif}a{color:var(--accent)}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #b36c00;outline-offset:4px}.wrap{max-width:1100px;margin:auto;padding:0 24px}header{background:#183e52;color:white;padding:36px 0 32px}header p{color:#d9edef;max-width:62ch;margin:12px 0 0}header h1{font-size:clamp(2rem,5vw,3.3rem);line-height:1.12;margin:8px 0;letter-spacing:-.035em}.eyebrow{font-size:.8rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700}main{padding:28px 0 48px}h2{font-size:1.35rem;margin:0 0 12px}h3{font-size:1.1rem;margin:0}p{margin:8px 0}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}button,input{font:inherit}button{border:1px solid var(--line);border-radius:9px;padding:10px 15px;color:var(--ink);background:white;cursor:pointer}button[aria-pressed=true]{background:var(--accent);color:white;border-color:var(--accent)}input[type=search]{padding:13px 16px;border:1px solid #a8babb;border-radius:10px;width:min(100%,540px);background:white;color:var(--ink);font-size:1rem}.category{margin:0 0 30px;border-bottom:1px solid var(--line);padding-bottom:20px}.grade-group{border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:12px 15px;background:#edf3f4}.grade-group>summary{font-size:1.05rem;font-weight:700;cursor:pointer;padding:5px 0}.grade-group .grid{margin-top:12px}.toolbar select{font:inherit;padding:10px;border:1px solid #a8babb;border-radius:8px;background:white;color:var(--ink)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:14px}.tile{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:21px;border:1px solid var(--line);border-radius:15px;background:white;min-height:180px}.tile p{color:var(--muted);margin:0}.tag{font-size:.79rem;font-weight:700;color:var(--accent)}.tile a{margin-top:auto;display:inline-block;text-decoration:none;font-weight:700;border-radius:8px;background:var(--accent);color:white;padding:10px 13px}.tile a:hover{background:#0d5149}.planned{border-style:dashed;background:#f8fafb;min-height:140px}.planned .tag{color:var(--muted)}.teacher{border:1px solid var(--line);border-radius:14px;background:white;padding:22px;margin-top:30px}.teacher a{display:inline-block;margin:7px 16px 7px 0;font-weight:700}footer{border-top:1px solid var(--line);padding:20px 0;color:var(--muted);font-size:.88rem}.sr{position:absolute;left:-10000px}.skip:focus{left:10px;top:10px;background:white;padding:10px;z-index:9}.hide,[hidden]{display:none!important}@media(max-width:500px){.wrap{padding:0 16px}header{padding:27px 0}.tile{min-height:0}.toolbar button{flex:1 1 auto}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="sr skip" href="#main">Ugrás a tananyaghoz</a>
+<header><div class="wrap"><div class="eyebrow">Tanulás · Gyakorlás · Fejlődés</div><h1>Digitális Tanulóműhely</h1><p>Válassz tantárgyat vagy tanfolyamot! Önálló tanulás, interaktív feladatok és játékok egy helyen.</p></div></header>
+<main class="wrap" id="main">
+<label for="search"><strong>Alkalmazás keresése</strong></label><br><input type="search" id="search" placeholder="Pl. angol, helyesírás, 7. osztály, A1">
+<div class="toolbar" role="group" aria-label="Tantárgyak"><button data-filter="all" aria-pressed="true">Mind</button><button data-filter="en" aria-pressed="false">Angol</button><button data-filter="grammar" aria-pressed="false">Magyar nyelvtan</button><button data-filter="lit" aria-pressed="false">Irodalom</button><button data-filter="hu" aria-pressed="false">Magyar mint idegen nyelv</button><button data-filter="chem" aria-pressed="false">Kémia</button></div>
+<div class="toolbar"><label for="grade"><strong>Évfolyam / nyelvi szint:</strong></label><select id="grade"><option value="all">Mindegyik</option></select></div><p id="result" role="status"></p>
+<div id="catalog"></div>
+<noscript><p>A szűréshez engedélyezd a JavaScriptet. Az alkalmazások közvetlenül is elérhetők:</p><ul><li><a href="https://lajkogabor1968.github.io/angolapp-8/">AngolApp 8</a></li><li><a href="https://lajkogabor1968.github.io/english-adventure/">English Adventure</a></li><li><a href="https://lajkogabor1968.github.io/idiom-adventure/">Idiom Adventure</a></li><li><a href="https://lajkogabor1968.github.io/abece-kaland/betusziget/">Betűsziget</a></li><li><a href="https://lajkogabor1968.github.io/magyar-orosz/">Magyar–orosz Tanműhely</a></li></ul></noscript>
+<section class="teacher" aria-labelledby="teacher-title"><h2 id="teacher-title">Tanári központ</h2><p>Az eredményekhez és a tanári dokumentumokhoz a Google saját hozzáférés-ellenőrzése szükséges. A tanulók adatai nem jelennek meg ezen a nyitóoldalon.</p><a href="https://docs.google.com/spreadsheets/d/1KPrYzIG9VOCY-OL35sTy2MJqwFC2xVY_8C7kBiL3tOk/edit" target="_blank" rel="noopener noreferrer">AngolApp 8 · tanári eredmények</a><p>Az AngolApp 8 élő dolgozatbeküldése még aktiválásra vár.</p></section>
+</main><footer><div class="wrap">Digitális Tanulóműhely · önálló alkalmazások közös gyűjtőfelülete</div></footer>
+<script>
+'use strict';
+const base='https://lajkogabor1968.github.io/';
+const catalog=[
+  {
+    "id": "en",
+    "title": "Angol nyelv",
+    "grades": [
+      [
+        "5",
+        "5. osztály",
+        [
+          [
+            "AngolApp 5",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ],
+      [
+        "6",
+        "6. osztály",
+        [
+          [
+            "AngolApp 6",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ],
+      [
+        "7",
+        "7. osztály",
+        [
+          [
+            "Family – Család",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1RWfgX-EJ4APrnaQsrkvJGU2HMHQAH1Nh/view?usp=drivesdk"
+          ],
+          [
+            "Simple Present",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1p0iGitE7V85Az-YP29UytutghVJgTy8d/view?usp=drivesdk"
+          ],
+          [
+            "AngolApp 7",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ],
+      [
+        "8",
+        "8. osztály",
+        [
+          [
+            "AngolApp 8. oszt.",
+            "Interaktív alkalmazás",
+            "Olvasmányok, szókincs, hallásértés, nyelvtan és tesztek.",
+            "angolapp-8/"
+          ]
+        ]
+      ],
+      [
+        "other",
+        "Több évfolyam · felnőttek",
+        [
+          [
+            "English Adventure",
+            "Interaktív angol játék",
+            "Nyelvi küldetés és feladatok.",
+            "english-adventure/"
+          ],
+          [
+            "Idiom Adventure",
+            "B1 · felnőtteknek",
+            "Angol idiómák és példamondatok.",
+            "idiom-adventure/"
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "grammar",
+    "title": "Magyar nyelvtan",
+    "grades": [
+      [
+        "5",
+        "5. osztály",
+        [
+          [
+            "Betűsziget",
+            "Interaktív alkalmazás",
+            "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
+            "abece-kaland/betusziget/"
+          ],
+          [
+            "Ábécé-kaland",
+            "Interaktív játék",
+            "Betűismeret és ábécérend.",
+            "abece-kaland/"
+          ],
+          [
+            "Bábel tornya",
+            "Interaktív játék",
+            "Küldetés az elveszett betűkért.",
+            "babel-tornya-jatek/"
+          ],
+          [
+            "A kiejtés szerinti írásmód",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1kb2qmDW4frRTJ8r9jYzWJwbu55y-3SeV/view?usp=drivesdk"
+          ],
+          [
+            "A magyar ábécé",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1GBRZCYsDkxB8LD3S07HFwrdVVkWLY-1F/view?usp=drivesdk"
+          ]
+        ]
+      ],
+      [
+        "6",
+        "6. osztály",
+        [
+          [
+            "Betűsziget",
+            "Interaktív alkalmazás",
+            "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
+            "abece-kaland/betusziget/"
+          ],
+          [
+            "Az igekötők",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1HTfRgCUf9YCIBz_LRNquilcXI10NiCs-/view?usp=drivesdk"
+          ]
+        ]
+      ],
+      [
+        "7",
+        "7. osztály",
+        [
+          [
+            "Betűsziget",
+            "Interaktív alkalmazás",
+            "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
+            "abece-kaland/betusziget/"
+          ],
+          [
+            "Az egyszerű mondat szerkezete",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1j1cn8_Qep_kSQmqhE0C3hguY8diE4il5/view?usp=drivesdk"
+          ]
+        ]
+      ],
+      [
+        "8",
+        "8. osztály",
+        [
+          [
+            "Betűsziget",
+            "Interaktív alkalmazás",
+            "Válaszd ki az alkalmazásban is a megfelelő évfolyamot.",
+            "abece-kaland/betusziget/"
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "lit",
+    "title": "Magyar irodalom",
+    "grades": [
+      [
+        "5",
+        "5. osztály",
+        [
+          [
+            "Daidalosz és Ikarosz",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1DEjguxfS5wo8MhIpznsrt-UvdsMt-rFQ/view?usp=drivesdk"
+          ],
+          [
+            "Mondák – A csodaszarvas",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1V5NBdwLTPWUVshfWb8OjlKO3Isp_G-uG/view?usp=drivesdk"
+          ]
+        ]
+      ],
+      [
+        "6",
+        "6. osztály",
+        [
+          [
+            "6. osztályos irodalmi tananyag",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ],
+      [
+        "7",
+        "7. osztály",
+        [
+          [
+            "Irodalmi kaland",
+            "Interaktív játék",
+            "Irodalmi feladatok.",
+            "english-adventure/irodalom7/"
+          ],
+          [
+            "Zrínyi Miklós és a barokk",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/1sf3tmd4dcvzN6ZvZJjfUJNE50mMMbGMJ/view?usp=drivesdk"
+          ]
+        ]
+      ],
+      [
+        "8",
+        "8. osztály",
+        [
+          [
+            "8. osztályos irodalmi tananyag",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ],
+      [
+        "other",
+        "Kiegészítő irodalmi játékok",
+        [
+          [
+            "Tintalabor",
+            "Kosztolányi-küldetés",
+            "Irodalmi játék.",
+            "abece-kaland/kosztolanyi-tintalabor/"
+          ],
+          [
+            "Meseország négy őrzője",
+            "Kooperatív mesejáték",
+            "Közös mesei küldetés.",
+            "meseorszag/"
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "hu",
+    "title": "Magyar mint idegen nyelv · Венгерский язык",
+    "grades": [
+      [
+        "allhu",
+        "Teljes tanfolyam · Весь курс",
+        [
+          [
+            "Magyar–orosz Tanműhely",
+            "A1–B2 · orosz anyanyelvűeknek",
+            "Венгерский с нуля: слова, грамматика и упражнения.",
+            "magyar-orosz/"
+          ]
+        ]
+      ],
+      [
+        "A1",
+        "A1 nyelvi szint",
+        [
+          [
+            "A1 · Венгерский язык",
+            "Fejlesztés alatt álló tanfolyami szint",
+            "A meglévő A1 tananyag közvetlen elérése.",
+            "magyar-orosz/a1.html"
+          ]
+        ]
+      ],
+      [
+        "A2",
+        "A2 nyelvi szint",
+        [
+          [
+            "A2 · Венгерский язык",
+            "Fejlesztés alatt álló tanfolyami szint",
+            "A meglévő A2 tananyag közvetlen elérése.",
+            "magyar-orosz/a2.html"
+          ]
+        ]
+      ],
+      [
+        "B1",
+        "B1 nyelvi szint",
+        [
+          [
+            "B1 · Венгерский язык",
+            "Fejlesztés alatt álló tanfolyami szint",
+            "A meglévő B1 tananyag közvetlen elérése.",
+            "magyar-orosz/b1.html"
+          ]
+        ]
+      ],
+      [
+        "B2",
+        "B2 nyelvi szint",
+        [
+          [
+            "B2 · Венгерский язык",
+            "Fejlesztés alatt álló tanfolyami szint",
+            "A meglévő B2 tananyag közvetlen elérése.",
+            "magyar-orosz/b2.html"
+          ]
+        ]
+      ],
+      [
+        "culture",
+        "Kulturális ismeretek · Культура",
+        [
+          [
+            "Magyar kulturális ismeretek",
+            "Orosz nyelvű vizsgafelkészítés",
+            "Темы, вопросы и итоговый тест.",
+            "magyar-kulturalis-ismeretek/"
+          ]
+        ]
+      ],
+      [
+        "other",
+        "Kiegészítő anyagok",
+        [
+          [
+            "A Túró Rudi története",
+            "PDF · tanulói anyag",
+            "Letölthető feladatlap; a Google Drive meglévő hozzáférése érvényes.",
+            "https://drive.google.com/file/d/14q8s9w6HoaRBlNPNBU_ee9h6hkwSYQnA/view?usp=drivesdk"
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "chem",
+    "title": "Kémia",
+    "grades": [
+      [
+        "7",
+        "7. osztály",
+        [
+          [
+            "Kémia 7. oszt.",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ],
+      [
+        "8",
+        "8. osztály",
+        [
+          [
+            "Kémia 8. oszt.",
+            "Tervezett",
+            "A modul később bővül tananyaggal és feladatokkal.",
+            ""
+          ]
+        ]
+      ]
+    ]
+  }
+];
+const root=document.getElementById('catalog'),search=document.getElementById('search'),result=document.getElementById('result');let active='all';
+function make(tag,txt,cls){const e=document.createElement(tag);if(txt)e.textContent=txt;if(cls)e.className=cls;return e;}
+function norm(s){return s.toLocaleLowerCase('hu').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+const grade=document.getElementById('grade');
+function setGrades(){const selected=grade.value;const seen=new Map();for(const g of catalog){if(active!=='all'&&active!==g.id)continue;for(const [id,label] of g.grades){if(!seen.has(id))seen.set(id,active==='all'&&id==='other'?'Kiegészítő anyagok / több évfolyam':label);}}grade.replaceChildren(new Option('Mindegyik','all'));for(const [id,label] of seen)grade.add(new Option(label,id));if([...grade.options].some(o=>o.value===selected))grade.value=selected;}
+function render(){root.replaceChildren();let n=0,planned=0;const q=norm(search.value.trim());for(const group of catalog){if(active!=='all'&&group.id!==active)continue;const section=make('section',null,'category');section.append(make('h2',group.title));for(const [id,label,apps] of group.grades){if(grade.value!=='all'&&grade.value!==id)continue;const entries=apps.filter(a=>norm([group.title,label,...a.slice(0,3)].join(' ')).includes(q));if(!entries.length)continue;const block=make('details',null,'grade-group');block.open=!!q||grade.value!=='all'||group.id==='hu'&&id==='allhu';block.append(make('summary',label+' · '+entries.filter(a=>a[3]).length+' elérhető anyag'));const grid=make('div',null,'grid');for(const [name,tag,desc,path] of entries){const article=make('article',null,'tile'+(path?'':' planned'));article.append(make('div',tag,'tag'),make('h3',name),make('p',desc));if(path){const a=make('a',tag.startsWith('PDF')?'PDF megnyitása':group.id==='hu'?'Megnyitás · Открыть':'Megnyitás');a.href=path.startsWith('https://')?path:base+path;a.setAttribute('aria-label',name+' megnyitása');article.append(a);n++;}else planned++;grid.append(article);}block.append(grid);section.append(block);}if(section.childElementCount>1)root.append(section);}result.textContent=n+' elérhető tananyag-hivatkozás'+(planned?' · '+planned+' tervezett modul':'');if(!n&&!planned)root.append(make('p','Nincs találat. Válassz másik évfolyamot vagy keresőszót!'));}
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{active=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));setGrades();render();}));grade.addEventListener('change',render);search.addEventListener('input',render);setGrades();render();
+</script></body></html>
