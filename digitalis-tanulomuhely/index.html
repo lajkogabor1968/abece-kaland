@@ -20,10 +20,11 @@
 <noscript><p>A szűréshez engedélyezd a JavaScriptet. Az alkalmazások közvetlenül is elérhetők:</p><ul><li><a href="https://lajkogabor1968.github.io/angolapp-7/">AngolApp 7</a></li><li><a href="https://lajkogabor1968.github.io/angolapp-8/">AngolApp 8</a></li><li><a href="https://lajkogabor1968.github.io/english-adventure/">English Adventure</a></li><li><a href="https://lajkogabor1968.github.io/idiom-adventure/">Idiom Adventure</a></li><li><a href="https://lajkogabor1968.github.io/abece-kaland/betusziget/">Betűsziget</a></li><li><a href="https://lajkogabor1968.github.io/magyar-orosz/">Magyar–orosz Tanműhely</a></li></ul></noscript>
 <section class="teacher" aria-labelledby="teacher-title"><h2 id="teacher-title">Tanári központ</h2><p>Kizárólag engedélyezett pedagógusoknak, bejelentkezéssel.</p><a href="./szerkeszto.html" target="_blank" rel="noopener noreferrer">Tanári szerkesztőközpont</a></section>
 </main><footer><div class="wrap">Digitális Tanulóműhely · önálló alkalmazások közös gyűjtőfelülete</div></footer>
-<script>
+<script type="module">
+import {backend} from './tanulomuhely-backend.js';
 'use strict';
 const base='https://lajkogabor1968.github.io/';
-const catalog=[
+let catalog=[
   {
     "id": "en",
     "title": "Angol nyelv",
@@ -379,5 +380,24 @@ function norm(s){return s.toLocaleLowerCase('hu').normalize('NFD').replace(/[\u0
 const grade=document.getElementById('grade');
 function setGrades(){const selected=grade.value;const seen=new Map();for(const g of catalog){if(active!=='all'&&active!==g.id)continue;for(const [id,label] of g.grades){if(!seen.has(id))seen.set(id,active==='all'&&id==='other'?'Kiegészítő anyagok / több évfolyam':label);}}grade.replaceChildren(new Option('Mindegyik','all'));for(const [id,label] of seen)grade.add(new Option(label,id));if([...grade.options].some(o=>o.value===selected))grade.value=selected;}
 function render(){root.replaceChildren();let n=0,planned=0;const q=norm(search.value.trim());for(const group of catalog){if(active!=='all'&&group.id!==active)continue;const section=make('section',null,'category');section.append(make('h2',group.title));for(const [id,label,apps] of group.grades){if(grade.value!=='all'&&grade.value!==id)continue;const entries=apps.filter(a=>norm([group.title,label,...a.slice(0,3)].join(' ')).includes(q));if(!entries.length)continue;const block=make('details',null,'grade-group');block.open=!!q||grade.value!=='all'||group.id==='hu'&&id==='allhu';block.append(make('summary',label+' · '+entries.filter(a=>a[3]).length+' elérhető anyag'));const grid=make('div',null,'grid');for(const [name,tag,desc,path] of entries){const article=make('article',null,'tile'+(path?'':' planned'));article.append(make('div',tag,'tag'),make('h3',name),make('p',desc));if(path){const a=make('a',tag.startsWith('PDF')?'PDF megnyitása':group.id==='hu'?'Megnyitás · Открыть':'Megnyitás');a.href=path.startsWith('https://')?path:base+path;a.setAttribute('aria-label',name+' megnyitása');article.append(a);n++;}else planned++;grid.append(article);}block.append(grid);section.append(block);}if(section.childElementCount>1)root.append(section);}result.textContent=n+' elérhető tananyag-hivatkozás'+(planned?' · '+planned+' tervezett modul':'');if(!n&&!planned)root.append(make('p','Nincs találat. Válassz másik évfolyamot vagy keresőszót!'));}
-document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{active=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));setGrades();render();}));grade.addEventListener('change',render);search.addEventListener('input',render);setGrades();render();
+const toolbar=document.querySelector('.toolbar');
+toolbar.addEventListener('click',event=>{const b=event.target.closest('[data-filter]');if(!b)return;active=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));setGrades();render();});grade.addEventListener('change',render);search.addEventListener('input',render);if(!backend){setGrades();render()}
+if(backend){
+  const {data,error}=await backend.rpc('tanulomuhely_public_catalog');
+  if(!error&&Array.isArray(data)){
+    catalog=data;
+    if(!catalog.some(group=>group.id===active))active='all';
+    toolbar.replaceChildren();
+    for(const [id,title] of [['all','Mind'],...catalog.map(group=>[group.id,group.title])]){
+      const btn=make('button',title);
+      btn.dataset.filter=id;
+      btn.setAttribute('aria-pressed',String(active===id));
+      toolbar.append(btn);
+    }
+    setGrades();render();
+  }else{
+    catalog=[];
+    result.textContent='A tananyagok most nem tölthetők be. Frissítsd az oldalt.';
+  }
+}
 </script></body></html>
