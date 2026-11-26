@@ -4,7 +4,7 @@ const login = document.querySelector('#teacher-login');
 const status = document.querySelector('#teacher-status');
 let token = '', teacher = false;
 const params = new URLSearchParams(location.search);
-const material = params.get('tananyag');
+const material = params.get('tananyag') || (params.has('code') ? sessionStorage.getItem('dtm-return-material') : null);
 const allowed = catalog.flatMap(g => g.grades.flatMap(gr => gr[2]))
   .some(a => a[3] && new URL(a[3], base).href === material && new URL(material).origin === location.origin);
 const app = 'dtm-text:' + material;
@@ -32,7 +32,9 @@ async function signIn() {
   const challenge = b64(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
   sessionStorage.setItem('dtm-verifier',verifier);
   const redirect = new URL(location.href);
-  redirect.searchParams.delete('code');
+  redirect.search = '';
+  if (allowed) sessionStorage.setItem('dtm-return-material', material);
+  else sessionStorage.removeItem('dtm-return-material');
   redirect.hash = '';
   location.assign(api + '/auth/v1/authorize?' + new URLSearchParams({provider:'google',redirect_to:redirect.href,code_challenge:challenge,code_challenge_method:'s256'}));
 }
@@ -43,7 +45,7 @@ login.onclick = () => {
 async function auth() {
   const code = params.get('code'), verifier=sessionStorage.getItem('dtm-verifier');
   if (!code || !verifier) return;
-  const clean=new URL(location.href); clean.searchParams.delete('code'); history.replaceState(null,'',clean);
+  const clean=new URL(location.href); clean.searchParams.delete('code'); if (allowed) clean.searchParams.set('tananyag', material); sessionStorage.removeItem('dtm-return-material'); history.replaceState(null,'',clean);
   sessionStorage.removeItem('dtm-verifier');
   const result=await call('/auth/v1/token?grant_type=pkce',{method:'POST',body:JSON.stringify({auth_code:code,code_verifier:verifier})});
   token=result.access_token;
