@@ -1,19 +1,77 @@
-<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tanári szerkesztőközpont</title><style>body{font:17px system-ui;background:#f2f6f5;color:#183e52;margin:0}main{max-width:950px;margin:auto;padding:24px}section,article{background:white;border:1px solid #d7e2e2;border-radius:12px;padding:16px;margin:12px 0}label{display:block;margin:10px 0}input,select,textarea,button{font:inherit;padding:9px;border:1px solid #a9baba;border-radius:7px;box-sizing:border-box}input,textarea{width:100%}button{cursor:pointer;margin:4px;background:white;color:#183e52}button.primary{background:#14695e;color:white}button:disabled{opacity:.5}a{color:#14695e}small{display:block}#status{white-space:pre-wrap} [hidden]{display:none!important}</style></head><body><main><a href="./">← Tanulói felület</a><h1>Tanári szerkesztőközpont</h1><section id="login"><h2>Biztonságos belépés</h2><p>A tulajdonosi GitHub-fiókhoz tartozó, csak az abece-kaland tárolóra érvényes szerkesztési kulcs szükséges. A kulcsot nem tároljuk, és kizárólag a GitHub API-nak küldjük.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Szerkesztési kulcs létrehozása</a><p>Repository access: Only select repositories → abece-kaland. Repository permissions: Contents → Read and write.</p><label>Szerkesztési kulcs<input id="token" type="password" autocomplete="off" spellcheck="false"></label><button id="enter" class="primary">Belépés</button></section><p id="status" role="status" aria-live="polite"></p><div id="editor" hidden><button id="logout">Kilépés</button><button id="save" class="primary">Mentés és közzététel</button><button id="addGroup">Új tantárgy</button><p>A PDF-eket, Google-űrlapokat, Wordwall-játékokat és alkalmazásokat a hivatkozásukkal add hozzá. A mentés a közös tanulói katalógust frissíti.</p><div id="groups"></div></div></main><script>
-'use strict';const $=id=>document.getElementById(id),api='https://api.github.com',repo='/repos/lajkogabor1968/abece-kaland',file=repo+'/contents/digitalis-tanulomuhely/index.html';let token='',sha='',source='',catalog=[],dirty=false,busy=false;
+<!doctype html>
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tanári szerkesztőközpont</title><style>body{font:17px system-ui;background:#f2f6f5;color:#183e52;margin:0}main{max-width:950px;margin:auto;padding:24px}section,article{background:white;border:1px solid #d7e2e2;border-radius:12px;padding:16px;margin:12px 0}label{display:block;margin:10px 0}input,select,textarea,button{font:inherit;padding:9px;border:1px solid #a9baba;border-radius:7px;box-sizing:border-box}input,textarea{width:100%}button{cursor:pointer;margin:4px;background:white;color:#183e52}button.primary{background:#14695e;color:white}button:disabled{opacity:.5}a{color:#14695e}small{display:block}#status{white-space:pre-wrap} [hidden]{display:none!important}
+fieldset{border:0;padding:0;margin:0;min-width:0}input[type=checkbox]{width:auto;margin-right:.5em}summary{cursor:pointer;padding:10px 0}article{background:#f5f8f8}button{min-height:44px}button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #13695e;outline-offset:2px}
+</style></head><body><main><a href="./">← Tanulói felület</a><h1>Tanári szerkesztőközpont</h1>
+<section id="login"><button id="enter" class="primary" disabled>Bejelentkezés Google-fiókkal</button></section>
+<p id="status" role="status" aria-live="polite"></p><fieldset id="editor" hidden><button id="logout">Kilépés</button><button id="save" class="primary">Mentés és közzététel</button><button id="addGroup">Új tantárgy</button><p>A PDF-eket, Google-dokumentumokat, Google-űrlapokat, Wordwall-játékokat és alkalmazásokat a hivatkozásukkal add hozzá. A közzétett módosítások a tanulói oldalon is megjelennek.</p><div id="groups"></div></fieldset><datalist id="material-types"><option value="PDF"></option><option value="Google-dokumentum"></option><option value="Google-űrlap"></option><option value="Wordwall"></option><option value="Alkalmazás"></option><option value="Interaktív feladat"></option></datalist></main><script type="module">
+import {backend} from './tanulomuhely-backend.js';
+
+const $=id=>document.getElementById(id);
+let catalog=[],revision=0,dirty=false,busy=false;
+const openGrades=new WeakSet();
 function status(s){$('status').textContent=s}
-async function request(path,options={}){const r=await fetch(api+path,{...options,headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'Content-Type':'application/json'}});if(!r.ok)throw Error('GitHub hiba: '+r.status+(r.status===409?' – az oldal közben megváltozott; lépj be újra.':''));return r.json()}
-const decode=s=>new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0)));function encode(s){let b=new TextEncoder().encode(s),v='';for(let i=0;i<b.length;i+=8192)v+=String.fromCharCode(...b.subarray(i,i+8192));return btoa(v)}
-function parse(s){const m=s.match(/const catalog=(\[[\s\S]*?\]);\nconst root=/);if(!m)throw Error('A katalógus szerkezete megváltozott.');return JSON.parse(m[1])}
 function changed(){dirty=true;status('Nem mentett módosítások.')}
 function element(tag,text){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e}
 function button(parent,label,fn){const b=element('button',label);b.type='button';b.onclick=()=>{if(!busy)fn()};parent.append(b);return b}
-function field(parent,label,value,fn){const l=element('label',label),i=element('input');i.value=value;i.oninput=()=>{fn(i.value);changed()};l.append(i);parent.append(l)}
+function field(parent,label,value,fn){const l=element('label',label),i=element('input');i.value=value;i.oninput=()=>{fn(i.value);changed()};if(label==='Típus')i.setAttribute('list','material-types');l.append(i);parent.append(l)}
 function move(a,i,d){if(i+d<0||i+d>=a.length)return;[a[i],a[i+d]]=[a[i+d],a[i]];changed();render()}
 function remove(a,i){if(confirm('Biztosan törlöd ezt az elemet?')){a.splice(i,1);changed();render()}}
-function render(){const root=$('groups');root.replaceChildren();catalog.forEach((g,gi)=>{const s=element('section');root.append(s);const h=element('h2',g.title);s.append(h);field(s,'Tantárgy neve',g.title,v=>g.title=v);button(s,'↑',()=>move(catalog,gi,-1));button(s,'↓',()=>move(catalog,gi,1));button(s,'Tantárgy törlése',()=>remove(catalog,gi));button(s,'Évfolyam hozzáadása',()=>{g.grades.push(['grade-'+crypto.randomUUID(),'Új évfolyam',[]]);changed();render()});g.grades.forEach((gr,j)=>{const d=element('details');d.open=true;s.append(d);d.append(element('summary',gr[1]));field(d,'Évfolyam / szint',gr[1],v=>gr[1]=v);button(d,'↑',()=>move(g.grades,j,-1));button(d,'↓',()=>move(g.grades,j,1));button(d,'Évfolyam törlése',()=>remove(g.grades,j));button(d,'Új tananyag',()=>{gr[2].push(['Új tananyag','Interaktív feladat','','']);changed();render()});gr[2].forEach((a,k)=>{const t=element('article');d.append(t);['Tananyag címe','Típus (PDF, teszt, játék…)','Leírás','Hivatkozás (https://…)'].forEach((l,n)=>field(t,l,a[n],v=>a[n]=v));button(t,'↑',()=>move(gr[2],k,-1));button(t,'↓',()=>move(gr[2],k,1));button(t,'Törlés',()=>remove(gr[2],k))})})})}
-$('enter').onclick=async()=>{if(busy)return;busy=true;token=$('token').value.trim();$('token').value='';try{const u=await request('/user');if(u.login!=='lajkogabor1968'||u.id!==352103401)throw Error('Csak a tulajdonos léphet be.');const f=await request(file+'?ref=main');source=decode(f.content);sha=f.sha;catalog=parse(source);dirty=false;render();$('login').hidden=true;$('editor').hidden=false;status('Sikeres belépés.')}catch(e){token='';status(e.message)}finally{busy=false}};
+function render(){const root=$('groups');root.replaceChildren();catalog.forEach((g,gi)=>{const s=element('section');root.append(s);const h=element('h2',g.title);s.append(h);field(s,'Tantárgy neve',g.title,v=>g.title=v);button(s,'↑',()=>move(catalog,gi,-1));button(s,'↓',()=>move(catalog,gi,1));button(s,'Tantárgy törlése',()=>remove(catalog,gi));button(s,'Évfolyam hozzáadása',()=>{const grade=['grade-'+crypto.randomUUID(),'Új évfolyam',[]];g.grades.push(grade);openGrades.add(grade);changed();render()});g.grades.forEach((gr,j)=>{const d=element('details');d.open=openGrades.has(gr);d.ontoggle=()=>{if(d.open)openGrades.add(gr);else openGrades.delete(gr)};s.append(d);d.append(element('summary',gr[1]));field(d,'Évfolyam / szint',gr[1],v=>gr[1]=v);button(d,'↑',()=>move(g.grades,j,-1));button(d,'↓',()=>move(g.grades,j,1));button(d,'Évfolyam törlése',()=>remove(g.grades,j));button(d,'Új tananyag',()=>{gr[2].push(['Új tananyag','Interaktív feladat','','']);changed();render()});gr[2].forEach((a,k)=>{const t=element('article');d.append(t);['Tananyag címe','Típus','Leírás','Hivatkozás (https://…)'].forEach((l,n)=>field(t,l,a[n],v=>a[n]=v));const label=element('label','Elrejtés a tanulói oldalon');
+const hidden=element('input');hidden.type='checkbox';hidden.checked=a[4]===true;
+hidden.onchange=()=>{a[4]=hidden.checked;changed()};label.prepend(hidden);t.append(label);
+button(t,'↑',()=>move(gr[2],k,-1));button(t,'↓',()=>move(gr[2],k,1));button(t,'Törlés',()=>remove(gr[2],k))})})})}
+
+function resetEditor(){
+  catalog=[];dirty=false;
+  $('groups').replaceChildren();
+  $('editor').hidden=true;$('login').hidden=false;
+}
+async function loadEditor(){
+  const {data:{session},error:sessionError}=await backend.auth.getSession();
+  if(sessionError){status('A Google-belépés sikertelen. Próbáld újra.');return}
+  if(!session)return;
+  const {data,error}=await backend.rpc('tanulomuhely_edit_catalog');
+  if(error){
+    await backend.auth.signOut({scope:'local'});
+    status(error.code==='42501'?'Ennek a Google-fióknak nincs szerkesztői jogosultsága.':'A katalógus most nem tölthető be.');
+    return;
+  }
+  ({catalog,revision}=data);
+  render();
+  $('login').hidden=true;$('editor').hidden=false;
+  status('Sikeres belépés.');
+}
+$('enter').onclick=async()=>{
+  $('enter').disabled=true;
+  const redirectTo=new URL('szerkeszto.html',location.href).href;
+  const {error}=await backend.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{prompt:'select_account'}}});
+  if(error){$('enter').disabled=false;status('A Google-belépés nem indult el. Próbáld újra.')}
+};
 $('addGroup').onclick=()=>{if(busy)return;catalog.push({id:'subject-'+crypto.randomUUID(),title:'Új tantárgy',grades:[]});changed();render()};
-$('logout').onclick=()=>{if(busy||dirty&&!confirm('A nem mentett módosítások elvesznek. Kilépsz?'))return;token='';source='';catalog=[];dirty=false;$('groups').replaceChildren();$('editor').hidden=true;$('login').hidden=false;status('Kiléptél.')};
-$('save').onclick=async()=>{if(busy||!dirty)return;busy=true; $('save').disabled=true;try{for(const g of catalog){if(!g.title.trim())throw Error('A tantárgy neve nem lehet üres.');for(const gr of g.grades){if(!gr[1].trim())throw Error('Az évfolyam neve nem lehet üres.');for(const a of gr[2]){if(!a[0].trim())throw Error('A tananyag címe nem lehet üres.');if(a[3]&&!/^https:\/\//i.test(a[3])&&(!/^[a-zA-Z0-9][a-zA-Z0-9_./?=&%#-]*$/.test(a[3])||a[3].includes('..')))throw Error('Érvénytelen hivatkozás: '+a[0]);}}}const json=JSON.stringify(catalog,null,2).replace(/</g,'\\u003c');let next=source.replace(/const catalog=\[[\s\S]*?\];\nconst root=/,()=> 'const catalog='+json+';\nconst root=');const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const filters='<button data-filter="all" aria-pressed="true">Mind</button>'+catalog.map(g=>'<button data-filter="'+esc(g.id)+'" aria-pressed="false">'+esc(g.title)+'</button>').join('');next=next.replace(/(<div class="toolbar" role="group" aria-label="Tantárgyak">)[\s\S]*?(<\/div>)/,(_,a,b)=>a+filters+b);const r=await request(file,{method:'PUT',body:JSON.stringify({message:'Tanári katalógus frissítése',content:encode(next),sha,branch:'main'})});source=next;sha=r.content.sha;dirty=false;status('Mentve a GitHubon. A nyilvános oldal a Pages közzététele után frissül.')}catch(e){status(e.message)}finally{busy=false;$('save').disabled=false}};
+
+$('logout').onclick=async()=>{
+  if(busy||(dirty&&!confirm('A nem mentett módosítások elvesznek. Kilépsz?')))return;
+  const {error}=await backend.auth.signOut({scope:'local'});
+  if(error){status('A kilépés nem sikerült. Próbáld újra.');return}
+  resetEditor();status('Kiléptél.');
+};
+$('save').onclick=async()=>{
+  if(busy||!dirty)return;
+  busy=true;$('editor').disabled=true;
+  try{
+    const {data,error}=await backend.rpc('tanulomuhely_publish_catalog',{next_catalog:catalog,expected_revision:revision});
+    if(error)throw error;
+    revision=data;dirty=false;
+    status('A módosítások megjelentek a tanulói oldalon.');
+  }catch(error){
+    const messages={
+      '42501':'A mentéshez jelentkezz be az engedélyezett Google-fiókkal.',
+      '40001':'A katalógust egy másik lapon vagy eszközön már módosítottad. A mentés nem írta felül azt a változatot.',
+      '22023':'Ellenőrizd, hogy minden cím ki van-e töltve, és a hivatkozások érvényesek-e.'
+    };
+    status(messages[error.code]||'A mentés nem sikerült. Próbáld újra.');
+  }finally{busy=false;$('editor').disabled=false}
+};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+if(backend){$('enter').disabled=false;await loadEditor()}else status('A Google-belépés beállítása még folyamatban van.');
 </script></body></html>
