@@ -29,7 +29,7 @@ const munka=elem('div');
 panel.append(nyito,munka);
 parent.append(panel);
 const id=name=>munka.querySelector('#'+name);
-const modNev={normal:'Normál',btmn:'BTMN – támogatott',sni:'SNI – segített'}[mod];
+const modNev={normal:'Mester – önálló',btmn:'Kalandor – támogatott',sni:'Felfedező – segített'}[mod];
 let tartalom,jelzes,muvelet,szam,sor,index,pont,hibak,lezart;
 panel.ontoggle=()=>{
   if(!panel.open || tartalom) return;
@@ -60,7 +60,7 @@ function ellenoriz(jo) {
   const t=sor[index];
   if (jo) pont++; else hibak.push(t);
   tartalom.querySelectorAll('button,input').forEach(x=>x.disabled=true);
-  jelzes.textContent=(jo?'Helyes! ':'Ezt még érdemes gyakorolni. ')+ 'Megoldás: '+megoldas(t);
+  jelzes.textContent=(jo?'Helyes! ':'Ezt még érdemes gyakorolni. ')+ 'Megoldás: '+megoldas(t)+' '+t.segitseg;
   id('haladas').value=index+1;
   const tovabb=gomb(muvelet,index+1<sor.length?'Következő feladat →':'Eredmény megtekintése',()=>{
     index++;
@@ -172,8 +172,8 @@ function eredmeny(){
   gomb(muvelet,'Újragyakorlás',()=>indit(szam),'fo');
   if(alkotas[szam]) {
     const [kerdes,minta,szempont]=alkotas[szam];
-    const panel=elem('details'), body=elem('div'), mezo=elem('textarea');
-    mezo.setAttribute('aria-label','Saját megoldás vagy jegyzet');body.append(elem('p',kerdes),mezo);
+    const panel=elem('details'), body=elem('div');
+    body.append(elem('p',kerdes),elem('p','Mondd el szóban a megoldásodat, majd ellenőrizd a mintaválasz alapján!'));
     const mutasd=gomb(body,'Önellenőrzés',()=>{
       mutasd.remove();body.append(elem('blockquote',minta),elem('p',szempont));
     });
