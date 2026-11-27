@@ -34,8 +34,8 @@ function konyvjelzoLap(parent, lessonNumber, mode) {
       choose('A fiú látja, hogy Zita rossz felé indul. Felé fordul, és magához inti.','Erre gyere!','Csendesebben!','Nem tudom.'),
       choose('Zita a ceruzáját keresi. Társa széttárja a kezét és vállat von.','Nem tudom.','Erre gyere!','Csendesebben!')],
     [6,'Játsszátok el párban!',reflect('Egyikőtök olvasó, a másik könyvtáros. Négy megszólalásban játsszátok el a könyvjelző átvételét! Melyik mozdulatotok segített megérteni az üzenetet?', '– Jó napot! A rókás könyvjelzőért jöttem. – Ez lesz az? – Igen, köszönöm! – Tessék! A könyvtáros nyitott tenyérrel mutathat a könyvjelzőre. Nálatok mit fejezett ki a mozdulat?')],
-    [28,'Rövid vagy hosszú?',reading('Olvasd fel: kor – kór • öt – őt • szurok – szúrok • füzet – fűzet.'),
-      write('Melyik magánhangzó hosszú a „fűzet” szóban?', 'ű'),choose('A fenyő kérgén sötét … csillogott.','szurok','szúrok'),choose('Megszámoltam a könyveket: pontosan … volt.','öt','őt')],
+    [28,'Rövid vagy hosszú?',reading('Olvasd fel: kor – kór • öt – őt • szurok – szúrok • tör – tőr.'),
+      write('Melyik magánhangzó hosszú a „tőr” szóban?', 'ő'),choose('A fenyő kérgén sötét … csillogott.','szurok','szúrok'),choose('Megszámoltam a könyveket: pontosan … volt.','öt','őt')],
     [29,'Csoportosíts hangrend szerint!',...['polc','füzet','ibolya','kulacs','tükör','csiga'].map((word,i)=>{
       const categories=['mély','magas','vegyes'], correct=categories[i%3];return choose(word,correct,...categories.filter(c=>c!==correct));
     })],
@@ -81,12 +81,11 @@ function konyvjelzoLap(parent, lessonNumber, mode) {
         function mark(ok,answer){
           if(done)return;done=true;count++;if(ok)correct++;
           box.querySelectorAll('button,input').forEach(e=>e.disabled=true);
-          feedback.textContent=(ok?'Helyes! ':'A helyes megoldás: ')+(!ok?answer:'');
+          feedback.textContent=ok?'Helyes!'+(answer?' Megoldás: '+answer:''):'A helyes megoldás: '+answer;
           result.textContent=count===total?'Eredmény: '+correct+' / '+total+' ('+Math.round(100*correct/total)+'%).':'';
         }
         if(part.model){
-          const label=node('label','Saját válasz vagy jegyzet (szóban is megoldható)');
-          label.append(node('textarea'));box.append(label,button('Önellenőrzés',()=>{feedback.textContent=part.model;}));
+          box.append(node('p','Válaszolj szóban, majd hasonlítsd össze a válaszodat a mintával!'),button('Mintaválasz és önellenőrzés',()=>{feedback.textContent=part.model;}));
         }else if(part.grid){
           box.append(node('p','Keresd meg a KERT, KAPU, HÍD és SÍP szót! Érintsd meg a szó első, majd utolsó betűjét. Jobbra vagy lefelé haladj!'));
           const grid=node('div');grid.className='konyvjelzo-racs';box.append(grid);
@@ -102,7 +101,7 @@ function konyvjelzoLap(parent, lessonNumber, mode) {
               found.add(word);
               for(let k=start;k<=i;k+=(i-start<6?1:6))grid.children[k].classList.add('megtalalt');
               feedback.textContent='Megtaláltad: '+[...found].join(', ')+'.';
-              if(found.size===4)mark(true,'');
+              if(found.size===4)mark(true,'KERT, KAPU, HÍD, SÍP');
             });
             cell.setAttribute('aria-label',(Math.floor(i/6)+1)+'. sor, '+(i%6+1)+'. oszlop: '+ch);grid.append(cell);
           }
@@ -127,6 +126,7 @@ function konyvjelzoLap(parent, lessonNumber, mode) {
         }
         box.append(feedback);
       }
+      if(total===0)result.textContent='Szóbeli feladat – a mintaválasz alapján ellenőrizd magad.';
       area.append(result,button('Újragyakorlás',start));
     }
     section.ontoggle=()=>{if(section.open&&!area.childElementCount)start();};
