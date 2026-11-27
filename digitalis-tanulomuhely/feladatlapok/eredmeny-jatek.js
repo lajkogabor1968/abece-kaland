@@ -2,9 +2,27 @@
 // Student submissions are practice results, not authenticated grades.
 const nkCloudApi='https://gxsszmcsqqbyvspcqrvl.supabase.co';
 const nkCloudKey='sb_publishable_FMQmuakxQorQMwsybj1Xvg_ItXuYkxQ';
-function nkSendPanel(parent,lessonNo,activity,score,total){
+let nkActiveLeave=null;
+function nkBeginLeave(panel){
+  if(nkActiveLeave)nkActiveLeave.stop();
+  let count=0,stopped=false,away=false;
+  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Oldalelhagyások: 0';panel.append(status);
+  const note=document.createElement('p');note.textContent='A feladat alatt az alkalmazás rögzíti a lap- és ablakváltások számát. A pontszámod ettől nem változik.';panel.append(note);
+  function update(){
+    if(stopped)return;
+    if(!panel.isConnected){stop();return;}
+    const now=!!document.hidden||!document.hasFocus();
+    if(now&&!away){count++;status.textContent='Oldalelhagyások: '+count;}
+    away=now;
+  }
+  function stop(){if(!stopped){stopped=true;document.removeEventListener('visibilitychange',update);window.removeEventListener('blur',update);window.removeEventListener('focus',update);if(nkActiveLeave===tracker)nkActiveLeave=null;}return count;}
+  const tracker={stop};nkActiveLeave=tracker;
+  document.addEventListener('visibilitychange',update);window.addEventListener('blur',update);window.addEventListener('focus',update);
+  return tracker;
+}
+function nkSendPanel(parent,lessonNo,activity,score,total,pageLeaves=null){
   const box=document.createElement('section');box.className='study-note';
-  const title=document.createElement('h3');title.textContent='Eredmény elküldése a tanárnak';box.append(title);
+  const title=document.createElement('h3');title.textContent='Eredmény elküldése a tanárnak';box.append(title);const leaves=document.createElement('p');leaves.textContent='Oldalelhagyások: '+(Number.isInteger(pageLeaves)?pageLeaves:'nem mért');box.append(leaves);
   const info=document.createElement('p');info.textContent='Csak akkor küldd el, ha a tanárod kéri. Add meg a neved vagy a tanártól kapott azonosítót és az osztályodat. Az eredmény önálló gyakorlási adat, nem hitelesített dolgozatjegy.';box.append(info);
   const form=document.createElement('form');const fields={};
   for(const [id,label,max] of [['student_label','Név vagy tanulói azonosító',80],['class_label','Osztály',20]]){
@@ -13,7 +31,7 @@ function nkSendPanel(parent,lessonNo,activity,score,total){
   const send=document.createElement('button');send.type='submit';send.textContent='Eredmény beküldése';const status=document.createElement('p');status.setAttribute('role','status');form.append(send,status);box.append(form);parent.append(box);
   const id=crypto.randomUUID();let busy=false,sent=false;
   form.onsubmit=async ev=>{ev.preventDefault();if(busy||sent)return;const student_label=fields.student_label.value.trim(),class_label=fields.class_label.value.trim();if(!student_label||!class_label){status.textContent='Mindkét mezőt töltsd ki!';return;}busy=true;send.disabled=true;Object.values(fields).forEach(x=>x.disabled=true);status.textContent='Beküldés…';
-    try{const res=await fetch(nkCloudApi+'/rest/v1/nyelvtan5_results',{method:'POST',headers:{apikey:nkCloudKey,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({id,student_label,class_label,lesson_no:lessonNo,activity,score,total})});if(!res.ok){if(res.status===409){status.textContent='Ez a beküldési azonosító már szerepel az adatbázisban. Kérd a tanárt, hogy ellenőrizze.';sent=true;return;}throw Error('HTTP '+res.status);}sent=true;status.textContent='Az eredmény megérkezett a központi eredménytáblába.';send.textContent='Elküldve';}
+    try{const res=await fetch(nkCloudApi+'/rest/v1/nyelvtan5_results',{method:'POST',headers:{apikey:nkCloudKey,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({id,student_label,class_label,lesson_no:lessonNo,activity,score,total,page_leaves:Number.isInteger(pageLeaves)?pageLeaves:null})});if(!res.ok){if(res.status===409){status.textContent='Ez a beküldési azonosító már szerepel az adatbázisban. Kérd a tanárt, hogy ellenőrizze.';sent=true;return;}throw Error('HTTP '+res.status);}sent=true;status.textContent='Az eredmény megérkezett a központi eredménytáblába.';send.textContent='Elküldve';}
     catch(err){status.textContent='Nem sikerült igazolni a beküldést. A pontszámod továbbra is látható. Próbáld újra!';}
     finally{busy=false;if(!sent){send.disabled=false;Object.values(fields).forEach(x=>x.disabled=false);}}
   };
@@ -58,15 +76,15 @@ const nkGames={
 function nkRealGame(i){
  const cfg=nkGames[i+1];if(!cfg)return;current=i;const activeMode=mode.value;
  const shuffle=xs=>{const a=xs.slice();for(let j=a.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[a[j],a[k]]=[a[k],a[j]];}return a};
- root.replaceChildren();const panel=e(root,'section','');b(panel,'← Lecke',()=>lesson(i));e(panel,'h2',cfg.title);e(panel,'p',cfg.rule);
+ root.replaceChildren();const panel=e(root,'section','');b(panel,'← Lecke',()=>lesson(i));e(panel,'h2',cfg.title);e(panel,'p',cfg.rule);const tracker=nkBeginLeave(panel);let pageLeaves=0;
  const rounds=shuffle(cfg.rounds).slice(0,activeMode==='sni'?Math.min(5,cfg.rounds.length):activeMode==='btmn'?Math.min(8,cfg.rounds.length):cfg.rounds.length);
  const bar=e(panel,'progress','');bar.max=rounds.length;bar.value=0;bar.setAttribute('aria-label','Játék előrehaladása');
  const area=e(panel,'div','');let pos=0,score=0;const wrong=[];
  const bins=cfg.kind==='sort'?e(panel,'div',''):null;const binRows=[];
  if(bins){e(bins,'h3','A megtöltött csoportok');const grid=e(bins,'div','');grid.className='map';cfg.groups.forEach(g=>{const tray=e(grid,'div','');tray.className='study-note';e(tray,'strong',g);binRows.push(e(tray,'div',''));});}
- function next(){area.replaceChildren();bar.value=pos;if(pos===rounds.length){e(area,'h3','Első próbálkozásra: '+score+' / '+rounds.length+' ('+Math.round(100*score/rounds.length)+'%)');e(area,'p',wrong.length?'Javított kártyák: '+wrong.join('; '):'Minden kártya helyes volt!');b(area,'Új játék',()=>nkRealGame(i));nkSendPanel(area,i+1,'jatek',score,rounds.length);return;}
+ function next(){area.replaceChildren();bar.value=pos;if(pos===rounds.length){e(area,'h3','Első próbálkozásra: '+score+' / '+rounds.length+' ('+Math.round(100*score/rounds.length)+'%)');e(area,'p',wrong.length?'Javított kártyák: '+wrong.join('; '):'Minden kártya helyes volt!');b(area,'Új játék',()=>nkRealGame(i));nkSendPanel(area,i+1,'jatek',score,rounds.length,pageLeaves);return;}
  const q=rounds[pos];e(area,'p',(pos+1)+' / '+rounds.length);e(area,'h3',q[0]);const status=e(area,'p','');status.setAttribute('role','status');const controls=e(area,'div','');let answered=false;
- function finish(ok,correct){if(answered)return;answered=true;controls.replaceChildren();if(ok)score++;else wrong.push(q[0]);status.textContent=(ok?'Helyes! ':'A helyes megoldás: ')+correct;b(controls,'Tovább',()=>{pos++;next();});}
+ function finish(ok,correct){if(answered)return;answered=true;controls.replaceChildren();if(ok)score++;else wrong.push(q[0]);if(pos===rounds.length-1)pageLeaves=tracker.stop();status.textContent=(ok?'Helyes! ':'A helyes megoldás: ')+correct;b(controls,'Tovább',()=>{pos++;next();});}
  if(cfg.kind==='sort'){const targets=e(controls,'div','');targets.className='map';cfg.groups.forEach((g,j)=>b(targets,g,()=>{if(answered)return;const tile=e(binRows[q[1]],'p',(j===q[1]?'✓ ':'↻ ')+q[0]);tile.style.cssText='background:white;border:1px solid #b9d2cf;padding:5px;border-radius:6px;margin:5px 0';finish(j===q[1],cfg.groups[q[1]]);}));if(activeMode==='sni')audio(area,q[0]);}
  else{const correct=q[1],start=activeMode==='sni'?Math.min(1,correct.length-1):0;let selected=correct.slice(0,start);let pool=shuffle(correct.slice(start));if(pool.length>1&&pool.every((x,j)=>x===correct[start+j]))pool.push(pool.shift());const assembled=e(controls,'p','');const palette=e(controls,'div','');function draw(){assembled.textContent='Összeállítás: '+selected.join(' → ');palette.replaceChildren();pool.filter(x=>!selected.includes(x)).forEach(x=>b(palette,x,()=>{selected.push(x);draw();}));if(selected.length>start)b(palette,'Visszavonás',()=>{selected.pop();draw();});if(selected.length===correct.length)b(palette,'Ellenőrzés',()=>finish(selected.every((x,j)=>x===correct[j]),correct.join(' → ')));}draw();}
  }next();
