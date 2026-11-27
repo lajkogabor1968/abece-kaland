@@ -1,3 +1,4 @@
+const fejezetiAdatok = (() => {
 // Egy tételsor egy feladat. A | választja el a kérdést, a megoldást és a téves válaszokat.
 // Írásos feladatban a ~ egyenértékű megoldásokat, rendezéskor a / egymást követő elemeket választ el.
 const lapok = [];
@@ -167,11 +168,6 @@ const alkotas = {
   46:['Rajzolj szóhálót a kirándulásról!','Felszerelés: kulacs, hátizsák. Útvonal: ösvény, híd. Pihenés: tisztás, pad.','Legalább két csoportod van, és minden szót meg tudsz indokolni?'],
   47:['Jellemezz valakit egyetlen tettével, a tulajdonság megnevezése nélkül!','A rajt előtt Lili észrevette, hogy társa cipőfűzője kibomlott. Lehajolt, és segített megkötni.','Következtethet az olvasó a szereplő tulajdonságára?']
 };
-const temakorok = [
-  [1,8,'Tanulás és kommunikáció'], [9,19,'Helyesírás és nyelvhelyesség'],
-  [20,25,'Szólások, könyvek és szövegek'], [26,36,'Beszédhangok és hangtörvények'],
-  [37,40,'A szavak szerkezete'], [41,48,'Hangalak és jelentés'], [49,50,'Év végi ismétlés']
-];
 kiegeszit(1,'sorrend','Állítsd össze a tanulási tervet!','Készülj fel, próbáld ki emlékezetből, aztán ellenőrizd magad!',
 'Felkészülés egy szabályból|Elolvasom a szabályt./Becsukom a könyvet./Saját példát mondok rá./Visszakeresem, jól alkalmaztam-e.');
 kiegeszit(2,'pár','Melyik érzékszerveddel veszed észre a jelzést?','A jel lehet látható, hallható vagy tapintható.',
@@ -216,3 +212,6 @@ kiegeszit(45,'pár','Párosítsd a hangot a forrásával!','Képzeld el, mi adha
 'Fémkanál ér a porceláncsészéhez.|koccan|surrog|sistereg','Víz cseppen a forró vasra.|sistereg|koppan|zörög');
 kiegeszit(48,'írás','Fejtsd meg a szórejtvényt! Csak a közös szót írd le!','Ugyanaz a hangsor két külön jelentésben is illik a meghatározáshoz.',
 'Erődítmény is lehet, és azt is jelenti: egy helyben marad, míg valaki megérkezik.|vár','A szánkban van, és azt is jelenti: a kezében tart valamit.|fog');
+
+return {lapok, alkotas};
+})();

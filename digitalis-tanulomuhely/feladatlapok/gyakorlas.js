@@ -1,5 +1,6 @@
 'use strict';
-const id = name => document.getElementById(name);
+function fejezetiFeladatlap(parent, lecke, mod) {
+const {lapok, alkotas} = fejezetiAdatok;
 function elem(tag, text, cls) {
   const node = document.createElement(tag);
   if (text !== undefined) node.textContent = text;
@@ -21,33 +22,20 @@ function kever(lista) {
   }
   return result;
 }
-const modok = {
-  normal:'Az összes feladatot megoldhatod. Minden válasz után megkapod a megoldást.',
-  btmn:'Rövidebb feladatsor, látható kapaszkodók. Egy feladatra figyelj egyszerre!',
-  sni:'Rövid gyakorlás nagyobb betűkkel. A választós feladatokban két lehetőség közül dönthetsz.'
-};
-const katalogus=id('katalogus'), munka=id('munka'), tartalom=id('tartalom'), jelzes=id('visszajelzes'), muvelet=id('muvelet');
-let mod, szam, sor, index, pont, hibak, lezart, nyito;
-function modvaltas() {
-  mod=id('mod').value;
-  document.body.dataset.mod=mod;
-  id('leiras').textContent=modok[mod];
-}
-id('mod').onchange=modvaltas;
-modvaltas();
-for (const [elso,utolso,nev] of temakorok) {
-  const panel=elem('details'), lista=elem('div',undefined,'lista');
-  panel.open=elso===1;
-  panel.append(elem('summary',nev),lista);
-  for (let n=elso;n<=utolso;n++) {
-    const button=gomb(lista,'',()=>{nyito=button; indit(n);});
-    button.append(elem('span',String(n).padStart(2,'0')+' · ','sorszam'),lapok[n-1].cim);
-  }
-  id('temak').append(panel);
-}
-id('vissza').onclick=()=>{
-  munka.hidden=true; katalogus.hidden=false;
-  nyito?.focus();
+
+const panel=elem('details',undefined,'fejezeti-lap');
+const nyito=elem('summary','Gyakorló feladatlap');
+const munka=elem('div');
+panel.append(nyito,munka);
+parent.append(panel);
+const id=name=>munka.querySelector('#'+name);
+const modNev={normal:'Normál',btmn:'BTMN – támogatott',sni:'SNI – segített'}[mod];
+let tartalom,jelzes,muvelet,szam,sor,index,pont,hibak,lezart;
+panel.ontoggle=()=>{
+  if(!panel.open || tartalom) return;
+  munka.innerHTML='<p id="hely"></p><h3 id="cim" tabindex="-1"></h3><progress id="haladas" aria-label="Eddig ellenőrzött feladatok"></progress><div id="tartalom"></div><div id="visszajelzes" role="status"></div><div id="muvelet"></div>';
+  tartalom=id('tartalom');jelzes=id('visszajelzes');muvelet=id('muvelet');
+  indit(lecke+1);
 };
 function indit(n,csak) {
   szam=n;
@@ -55,10 +43,9 @@ function indit(n,csak) {
   const hossz=mod==='sni'?Math.min(3,Math.max(2,bank.length-2)):mod==='btmn'?Math.max(2,Math.min(5,bank.length-1)):bank.length;
   sor=csak?[...csak]:kever(bank).slice(0,hossz);
   index=0; pont=0; hibak=[];
-  katalogus.hidden=true; munka.hidden=false;
   id('cim').textContent=lapok[n-1].cim;
   mutat();
-  id('cim').focus(); window.scrollTo(0,0);
+  id('cim').focus(); 
 }
 function tisztit() {
   tartalom.replaceChildren(); jelzes.replaceChildren(); muvelet.replaceChildren();
@@ -78,7 +65,7 @@ function ellenoriz(jo) {
   const tovabb=gomb(muvelet,index+1<sor.length?'Következő feladat →':'Eredmény megtekintése',()=>{
     index++;
     if (index===sor.length) eredmeny(); else mutat();
-    id('cim').focus();window.scrollTo(0,0);
+    id('cim').focus();
   },'fo');
   tovabb.focus();
 }
@@ -157,7 +144,7 @@ function mutat() {
   tisztit(); lezart=false;
   const t=sor[index], haladas=id('haladas');
   haladas.max=sor.length;haladas.value=index;
-  id('hely').textContent=id('mod').selectedOptions[0].text+' · '+(index+1)+' / '+sor.length+'. feladat';
+  id('hely').textContent=modNev+' · '+(index+1)+' / '+sor.length+'. feladat';
   tartalom.append(elem('p',t.utasitas));
   const kontextus=t.segitseg.startsWith('Zita üzenetet')||t.segitseg.startsWith('Reggel a kertkapu');
   if(kontextus||mod!=='normal') tartalom.append(elem('p',t.segitseg,'tipp'));
@@ -179,7 +166,7 @@ function mutat() {
 function eredmeny(){
   tisztit();
   const szazalek=Math.round(pont*100/sor.length);
-  id('hely').textContent='Befejezett feladatlap · '+id('mod').selectedOptions[0].text;
+  id('hely').textContent='Befejezett feladatlap · '+modNev;
   tartalom.append(elem('h3','Eredmény: '+szazalek+'%'),elem('p',sor.length+' feladatból '+pont+' helyes válasz.'));
   if(hibak.length) gomb(muvelet,'A hibás feladatok újra',()=>indit(szam,hibak));
   gomb(muvelet,'Újragyakorlás',()=>indit(szam),'fo');
@@ -192,4 +179,6 @@ function eredmeny(){
     });
     panel.append(elem('summary','Alkotóműhely · önellenőrzés, pontozás nélkül'),body);tartalom.append(panel);
   }
+}
+
 }
