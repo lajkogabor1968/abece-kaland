@@ -97,6 +97,18 @@ function attach() {
   },true);
 }
 
+
+function nkKnowledgeMatrix(rows){
+ const pupils=new Map(),lessons=new Set();
+ for(const r of rows){const n=Number(r.lesson_no),score=Number(r.score),total=Number(r.total);if(!Number.isInteger(n)||n<1||n>50||!Number.isFinite(score)||!Number.isFinite(total)||total<=0||score<0||score>total)continue;
+ const key=JSON.stringify([r.class_label,r.student_label]);if(!pupils.has(key))pupils.set(key,{cls:r.class_label,name:r.student_label,cells:new Map()});const cells=pupils.get(key).cells;lessons.add(n);
+ const old=cells.get(n),pct=100*score/total,stamp=String(r.submitted_at||''),id=String(r.id||'');
+ if(!old)cells.set(n,{pct,stamp,id,attempts:1});
+ else{old.attempts++;if(stamp>old.stamp||(stamp===old.stamp&&id>old.id)){old.pct=pct;old.stamp=stamp;old.id=id;}}
+ }
+ return {lessons:[...lessons].sort((a,b)=>a-b),pupils:[...pupils.values()].sort((a,b)=>String(a.cls).localeCompare(String(b.cls),'hu')||String(a.name).localeCompare(String(b.name),'hu'))};
+}
+
 function addResultsDashboard(){
   const host=document.querySelector('.teacher');
   if(!teacher||!token||!host||document.querySelector('#nk5-dashboard'))return;
@@ -112,14 +124,18 @@ function addResultsDashboard(){
   const refresh=el('button','Szűrés / frissítés'),prev=el('button','Előző oldal'),next=el('button','Következő oldal'),csv=el('button','CSV – látható oldal'),fullCsv=el('button','CSV – összes szűrt eredmény');
   [refresh,prev,next,csv,fullCsv].forEach(x=>{x.type='button';filters.append(x);});panel.append(filters);
   const message=el('p','Nyisd meg a táblát az adatok betöltéséhez.');message.setAttribute('role','status');message.setAttribute('aria-live','polite');panel.append(message);
-  const stats=el('div',''),wrap=el('div','');wrap.style.overflowX='auto';panel.append(stats,el('h3','Beküldések'),wrap);host.append(panel);
+  const stats=el('div',''),wrap=el('div','');wrap.style.overflowX='auto';
+  const knowledge=el('details','');knowledge.append(el('summary','Leckénkénti tanári tudástérkép'),el('p','Válassz egy osztályt vagy egy tanulót a fenti szűrőben, és külön a játékot vagy a tudáspróbát. A térkép a szűrt időszak legutóbbi beküldését mutatja leckénként. A hiányzó adat nem nulla. A játékok eltérő nehézségűek lehetnek; a szabadulószoba a fejezet utolsó leckéjénél jelenik meg, összefoglaló játékadatként.'));
+  const matrixKind=el('select','');for(const [v,l] of [['tudasproba','Tudáspróbák'],['jatek','Játékok']]){const o=el('option',l);o.value=v;matrixKind.append(o);}matrixKind.setAttribute('aria-label','Tudástérkép tevékenysége');
+  const matrixButton=el('button','Tudástérkép betöltése'),matrixStatus=el('p',''),matrixBody=el('div','');matrixButton.type='button';matrixStatus.setAttribute('role','status');matrixBody.style.overflowX='auto';knowledge.append(matrixKind,matrixButton,matrixStatus,matrixBody);
+  panel.append(stats,knowledge,el('h3','Beküldések'),wrap);host.append(panel);
   let offset=0,rows=[],busy=false,loaded=false,applied=null,asof=null,total=0;const size=100;
   const labels=['Dátum','Név / azonosító','Osztály','Lecke','Tevékenység','Pont','Maximum','Százalék','Oldalelhagyások'];
   const fmt=n=>n==null?'Nem mért':Number(n).toLocaleString('hu-HU',{maximumFractionDigits:2});
   const pct=n=>n==null?'–':fmt(n)+'%';
   const activity=a=>a==='jatek'?'Játék':'Tudáspróba';
   const display=r=>[new Date(r.submitted_at).toLocaleString('hu-HU',{timeZone:'Europe/Budapest'}),r.student_label,r.class_label,r.lesson_no,activity(r.activity),r.score,r.total,pct(100*r.score/r.total),r.page_leaves==null?'Nem mért':r.page_leaves];
-  function controls(){refresh.disabled=busy;prev.disabled=busy||offset===0||!loaded;next.disabled=busy||!loaded||offset+size>=total;csv.disabled=fullCsv.disabled=busy||!loaded||!rows.length;[cls,pupil,lesson,from,to,kind].forEach(x=>x.disabled=busy);}
+  function controls(){matrixButton.disabled=busy||!loaded;matrixKind.disabled=busy;refresh.disabled=busy;prev.disabled=busy||offset===0||!loaded;next.disabled=busy||!loaded||offset+size>=total;csv.disabled=fullCsv.disabled=busy||!loaded||!rows.length;[cls,pupil,lesson,from,to,kind].forEach(x=>x.disabled=busy);}
   function table(parent,headers,data){
     const scroll=el('div','');scroll.style.overflowX='auto';const t=el('table','');t.style.cssText='width:100%;border-collapse:collapse;text-align:left;font-size:15px';const head=el('thead',''),tr=el('tr','');
     headers.forEach(v=>{const h=el('th',v);h.scope='col';h.style.cssText='padding:8px;border-bottom:2px solid #b9d2cf';tr.append(h);});head.append(tr);t.append(head);
@@ -154,7 +170,7 @@ function addResultsDashboard(){
       const d=await query(f,reset?0:target,size,reset?null:asof,true);
       if(!teacher||!token)return;
       if(!reset&&Number(d.total)!==total){message.textContent='Az adatok megváltoztak. Frissítsd a szűrést a következő lap előtt.';return;}
-      applied=f;asof=d.asof;total=Number(d.total);offset=reset?0:target;rows=d.rows;loaded=true;
+      if(reset){matrixBody.replaceChildren();matrixStatus.textContent='A szűrés frissült; töltsd be újra a tudástérképet.';}applied=f;asof=d.asof;total=Number(d.total);offset=reset?0:target;rows=d.rows;loaded=true;
       drawStats(d);wrap.replaceChildren();table(wrap,labels,rows.map(display));
       message.textContent=rows.length?fmt(offset+1)+'–'+fmt(offset+rows.length)+' / '+fmt(total)+' beküldés. Szűrés időpontja: '+new Date(asof).toLocaleString('hu-HU',{timeZone:'Europe/Budapest'}):'Nincs találat.';
     }catch(err){rows=[];loaded=false;applied=null;asof=null;stats.replaceChildren();wrap.replaceChildren();message.textContent='Nem sikerült betölteni: '+err.message+' Jelentkezz be újra, ha a munkamenet lejárt.';}
@@ -166,6 +182,22 @@ function addResultsDashboard(){
     const blob=new Blob(['\uFEFF'+[labels,...data.map(display)].map(r=>r.map(safeCsv).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob),a=el('a','');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
+  
+  matrixKind.onchange=()=>{matrixBody.replaceChildren();matrixStatus.textContent='Töltsd be a kiválasztott tevékenységet.';};
+  matrixButton.onclick=async()=>{
+   if(busy||!teacher||!token||!applied)return;
+   if(!applied.p_class&&!applied.p_student){matrixStatus.textContent='Először szűrj egy osztályra vagy tanulóra, majd frissítsd a táblát.';return;}
+   const f={...applied,p_activity:matrixKind.value};busy=true;controls();matrixBody.replaceChildren();matrixStatus.textContent='Tudástérkép betöltése…';const all=[];
+   try{
+    const first=await query(f,0,500,asof,false),count=Number(first.total);
+    if(!Number.isInteger(count)||count<0||count>10000)throw Error('Szűkítsd az időszakot: a tudástérkép legfeljebb 10 000 beküldést dolgoz fel.');
+    all.push(...first.rows);for(let off=500;off<count;off+=500){const d=await query(f,off,500,asof,false);if(Number(d.total)!==count)throw Error('A találatok megváltoztak. Frissítsd a szűrést.');all.push(...d.rows);}
+    if(all.length!==count||new Set(all.map(r=>r.id)).size!==count)throw Error('Hiányos vagy ismétlődő eredménylista.');
+    if(!teacher||!token)return;const result=nkKnowledgeMatrix(all);const columns=result.lessons;
+    const t=el('table','');t.style.cssText='border-collapse:collapse;white-space:nowrap;text-align:center';const head=el('thead',''),hr=el('tr','');for(const name of ['Osztály','Tanuló',...columns.map(n=>n+'. lecke')]){const th=el('th',name);th.scope='col';th.style.cssText='padding:8px;border-bottom:2px solid #b9d2cf';hr.append(th);}head.append(hr);t.append(head);const body=el('tbody','');
+    for(const pupil of result.pupils){const tr=el('tr','');for(const name of [pupil.cls,pupil.name]){const td=el('td',name);td.style.cssText='text-align:left;padding:8px;border-bottom:1px solid #dce7e5';tr.append(td);}for(const n of columns){const c=pupil.cells.get(n),td=el('td',c?Math.round(c.pct)+'%':'–');td.style.cssText='padding:8px;border:1px solid #dce7e5;'+(!c?'background:#f3f5f6;color:#52606b':c.pct>=80?'background:#d9efdf;color:#245537':c.pct>=60?'background:#fff1cb;color:#694d16':'background:#f8dddd;color:#852f2f');if(c)td.title=c.attempts+' beküldés; legutóbbi eredmény: '+new Date(c.stamp).toLocaleString('hu-HU',{timeZone:'Europe/Budapest'});tr.append(td);}body.append(tr);}t.append(body);matrixBody.append(t);matrixStatus.textContent=result.pupils.length+' tanulói név/azonosító · '+columns.length+' lecke · '+count+' beküldés. Zöld: legalább 80%; sárga: 60–79%; piros: 60% alatt; –: nincs adat.';
+   }catch(err){matrixStatus.textContent='Nem sikerült: '+err.message;}finally{all.length=0;busy=false;controls();}
+  };
   refresh.onclick=()=>load(true);prev.onclick=()=>load(false,Math.max(0,offset-size));next.onclick=()=>load(false,offset+size);
   csv.onclick=()=>{if(!busy&&loaded)exportRows(rows,'nyelvtankaland-5-eredmenyek-oldal.csv');};
   fullCsv.onclick=async()=>{
@@ -186,7 +218,7 @@ function addResultsDashboard(){
   };
   controls();
   panel.ontoggle=()=>{if(panel.open&&!loaded)load(true);};
-  window.addEventListener('pagehide',e=>{if(e.persisted){rows=[];loaded=false;stats.replaceChildren();wrap.replaceChildren();}});
+  window.addEventListener('pagehide',e=>{if(e.persisted){rows=[];loaded=false;stats.replaceChildren();wrap.replaceChildren();matrixBody.replaceChildren();}});
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
   if(sessionStorage.getItem('nk5-open-results')==='1'){sessionStorage.removeItem('nk5-open-results');panel.open=true;load(true);}
 }
