@@ -257,6 +257,17 @@ async function start() {
   const rows=await call('/rest/v1/lesson_edits?'+new URLSearchParams({app:'eq.'+app,select:'item,content'}));
   rows.forEach(r=>{if(typeof r.content?.text==='string') edits.set(r.item,r.content.text);});
   frame=el('iframe',''); frame.title='Megnyitott tananyag';frame.style.cssText='width:100%;height:80vh;border:0';
-  frame.onload=attach;frame.src=material;panel.after(frame);
+  const nk5Material=new URL('nyelvtankaland-5.html',location.href).href;
+  if(material===nk5Material&&teacher){
+    window.nk5TeacherEditor=Object.freeze({
+      authorized:()=>teacher&&!!token,
+      save:async (lesson,content)=>{
+        if(!teacher||!token||!Number.isInteger(lesson)||lesson<1||lesson>50)throw Error('Tanári belépés szükséges.');
+        if(!await call('/rest/v1/rpc/is_workshop_teacher',{method:'POST',body:'{}'}))throw Error('Nincs szerkesztési jogosultság.');
+        await call('/rest/v1/lesson_edits?on_conflict=app,item',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({app:'nk5-game-v1',item:'game:'+lesson,content})});
+      }
+    });
+  }
+  frame.onload=attach;const startUrl=new URL(material);if(material===nk5Material){const game=sessionStorage.getItem('nk5-return-game');if(teacher&&/^(?:[1-9]|[1-4][0-9]|50)$/.test(game||'')){startUrl.searchParams.set('lecke',game);startUrl.searchParams.set('kuldetes','jatek');}if(teacher)sessionStorage.removeItem('nk5-return-game');}frame.src=startUrl.href;panel.after(frame);
 }
 start().catch(e=>status.textContent=e.message);
