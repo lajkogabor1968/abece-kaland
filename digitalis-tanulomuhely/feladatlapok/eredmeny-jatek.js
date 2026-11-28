@@ -75,7 +75,7 @@ const nkGames={
 };
 
 function nkGameFirstScore(outcomes){return outcomes.filter(Boolean).length;}
-function nkRealGame(i){
+function nkRealGame(i,practiceOnly=false){
  const cfg=nkGames[i+1];if(!cfg)return;current=i;const activeMode=mode.value;
  const shuffle=xs=>{const a=xs.slice();for(let j=a.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[a[j],a[k]]=[a[k],a[j]];}return a};
  const scene=i===10?'train':i===28?'rescue':i===36?'factory':'workshop';
@@ -85,28 +85,34 @@ function nkRealGame(i){
  root.replaceChildren();const panel=e(root,'section','');panel.classList.add('nk-game-panel');nkColors(panel,nkTheme(i));
  b(panel,'← Lecke',()=>lesson(i));e(panel,'h2',sceneIcon+' '+cfg.title);
  const story=e(panel,'div','');story.className='nk-game-story';nkMascot(story);const copy=e(story,'div','');e(copy,'strong','Szócska küldetése');e(copy,'p',mission);e(panel,'p',cfg.rule);
- const tracker=nkBeginLeave(panel);let pageLeaves=0;
- const cap=activeMode==='sni'?5:activeMode==='btmn'?8:12;const rounds=shuffle(cfg.rounds).slice(0,Math.min(cap,cfg.rounds.length));
+ const tracker=practiceOnly?null:nkBeginLeave(panel);let pageLeaves=null;
+ const cap=activeMode==='sni'?5:activeMode==='btmn'?8:12;
+ const history=typeof nkGameHistory==='function'?nkGameHistory(nkRoute(),i):null;
+ const weak=new Set(history?.weak||[]),mixed=shuffle(cfg.rounds),priority=mixed.filter(q=>weak.has(q[0])),fresh=mixed.filter(q=>!weak.has(q[0]));
+ const limit=Math.min(cap,cfg.rounds.length),reviewCount=practiceOnly?Math.min(limit,priority.length):Math.min(Math.ceil(limit/2),priority.length);
+ const rounds=priority.slice(0,reviewCount).concat(fresh,priority.slice(reviewCount)).slice(0,limit);
+ if(practiceOnly)e(panel,'p','Célzott ismétlés: a korábbi hibákból és új példákból. Nem írja át a tanárnak küldhető játékpontszámot.');
+ else if(reviewCount)e(panel,'p','Szócska néhány korábbi nehéz példát is visszahozott.');
  const meter=e(panel,'div','');meter.className='nk-game-meter';const tally=e(meter,'strong','');const bar=e(meter,'progress','');bar.max=rounds.length;bar.value=0;bar.setAttribute('aria-label','Teljesített küldetések');
- const area=e(panel,'div','');let pos=0;const outcomes=[],wrong=[];
+ const area=e(panel,'div','');let pos=0;const outcomes=[],wrong=[];let saved=false;
  const bins=cfg.kind==='sort'?e(panel,'div',''):null;const binRows=[],targetButtons=[];
  let activeChoice=null;
  if(bins){bins.className='nk-game-bins';e(bins,'h3',scene==='rescue'?'Hangrendi menedékhelyek':'A megtöltött csoportok');const grid=e(bins,'div','');grid.className='nk-game-targets';cfg.groups.forEach((g,j)=>{const tray=e(grid,'div','');tray.className='nk-game-bin';const button=b(tray,(scene==='rescue'?['🏡 ','🛖 ','🏕️ '][j]:'')+g,()=>{if(activeChoice)activeChoice(j)});button.className='nk-bin-button';targetButtons.push(button);binRows.push(e(tray,'div',''));});}
  function next(moveFocus=false){
   area.replaceChildren();bar.value=pos;tally.textContent=pos+' / '+rounds.length+' teljesített küldetés';
-  if(pos===rounds.length){activeChoice=null;targetButtons.forEach(x=>x.disabled=true);const score=nkGameFirstScore(outcomes);const result=e(area,'div','');result.className='nk-game-finish';e(result,'h3',scene==='rescue'?'🏆 Minden állat menedékbe jutott!':scene==='train'?'🏆 Minden vonat elindult!':scene==='factory'?'🏆 Minden megrendelés elkészült!':'🏆 Küldetés teljesítve!');e(result,'p','Első próbálkozásra: '+score+' / '+rounds.length+' ('+Math.round(100*score/rounds.length)+'%)');e(result,'p','Kijavított feladatok: '+wrong.length+'. A javítás nem írja át az első próbálkozás pontját.');if(wrong.length){const d=e(result,'details','');e(d,'summary','Ismétlendő szavak és feladatok');wrong.forEach(w=>{e(d,'p',w[0]+' → '+w[1]);});}nkSendPanel(area,i+1,'jatek',score,rounds.length,pageLeaves);b(area,'Új játék',()=>nkRealGame(i));b(area,'Vissza a leckéhez',()=>lesson(i));b(area,'Kalandtérkép',map);if(moveFocus){const h=result.querySelector('h3');h.tabIndex=-1;h.focus();}return;}
+  if(pos===rounds.length){activeChoice=null;targetButtons.forEach(x=>x.disabled=true);const score=nkGameFirstScore(outcomes);if(!saved&&typeof nkRecordGame==='function'){nkRecordGame(i,rounds,outcomes,practiceOnly);saved=true;}const result=e(area,'div','');result.className='nk-game-finish';e(result,'h3',scene==='rescue'?'🏆 Minden állat menedékbe jutott!':scene==='train'?'🏆 Minden vonat elindult!':scene==='factory'?'🏆 Minden megrendelés elkészült!':'🏆 Küldetés teljesítve!');e(result,'p','Első próbálkozásra: '+score+' / '+rounds.length+' ('+Math.round(100*score/rounds.length)+'%)');e(result,'p','Kijavított feladatok: '+wrong.length+'. A javítás nem írja át az első próbálkozás pontját.');if(wrong.length){const d=e(result,'details','');e(d,'summary','Ismétlendő szavak és feladatok');wrong.forEach(w=>{e(d,'p',w[0]+' → '+w[1]);});}if(!practiceOnly)nkSendPanel(area,i+1,'jatek',score,rounds.length,pageLeaves);if(wrong.length)b(area,'Célzott ismétlés',()=>nkRealGame(i,true));b(area,'Új játék',()=>nkRealGame(i));b(area,'Vissza a leckéhez',()=>lesson(i));b(area,'Kalandtérkép',map);if(moveFocus){const h=result.querySelector('h3');h.tabIndex=-1;h.focus();}return;}
   const q=rounds[pos],task=e(area,'div','');task.className='nk-game-task';const heading=e(task,'h3',q[0]);heading.tabIndex=-1;if(moveFocus)heading.focus();
   if(scene==='rescue'){const animal=e(task,'div',q[2]||'🐾');animal.className='nk-game-animal';animal.setAttribute('aria-hidden','true');}
   const status=e(task,'p','');status.className='nk-game-status';status.setAttribute('role','status');const controls=e(task,'div','');
-  let attempted=false,finished=false,firstCorrect=false;
+  let attempted=false,finished=false,firstCorrect=false,mistakes=0;
   function attempt(ok,correct){
    if(finished)return false;
    if(!attempted){attempted=true;firstCorrect=ok;if(!ok)wrong.push([q[0],correct]);}
-   if(!ok){status.textContent=scene==='rescue'?'🦊 Figyeld meg a szó magánhangzóit, majd válassz újra!':scene==='train'?'🦊 Nézd át a betűrendet! A vagonokat újra rendezheted.':'🦊 Ellenőrizd a szóelemek sorrendjét, és próbáld újra!';status.className='nk-game-status retry';return false;}
+   if(!ok){mistakes++;status.textContent=scene==='rescue'?'🦊 Figyeld meg a szó magánhangzóit, majd válassz újra!':scene==='train'?'🦊 Nézd át a betűrendet! A vagonokat újra rendezheted.':'🦊 Ellenőrizd a szóelemek sorrendjét, és próbáld újra!';if(mistakes>=2)status.textContent+=' Segítség: '+correct;status.className='nk-game-status retry';return false;}
    finished=true;outcomes.push(firstCorrect);activeChoice=null;targetButtons.forEach(x=>x.disabled=true);
    status.textContent='✓ '+(firstCorrect?'Elsőre sikerült! ':'Kijavítottad, ügyes vagy! ')+correct;status.className='nk-game-status success';
    bar.value=pos+1;tally.textContent=(pos+1)+' / '+rounds.length+' teljesített küldetés';
-   if(pos===rounds.length-1)pageLeaves=tracker.stop();
+   if(pos===rounds.length-1&&tracker)pageLeaves=tracker.stop();
    const forward=b(controls,pos===rounds.length-1?'Eredmény megtekintése →':'Következő küldetés →',()=>{pos++;next(true);});forward.className='nk-game-forward';forward.focus({preventScroll:true});return true;
   }
   if(cfg.kind==='sort'){
