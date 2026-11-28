@@ -88,7 +88,7 @@ function nkGameValid(candidate,base){
 }
 async function nkLoadGame(i){
  const n=i+1,base=nkGameOriginal[n];if(!base)return false;
- const response=await fetch(nkCloudApi+'/rest/v1/lesson_edits?'+new URLSearchParams({app:'eq.nk5-game-v1',item:'eq.game:'+n,select:'content'}),{headers:{apikey:nkCloudKey},cache:'no-store'});
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),5000);let response;try{response=await fetch(nkCloudApi+'/rest/v1/lesson_edits?'+new URLSearchParams({app:'eq.nk5-game-v1',item:'eq.game:'+n,select:'content'}),{headers:{apikey:nkCloudKey},cache:'no-store',signal:controller.signal});}finally{clearTimeout(timeout);}
  if(!response.ok)throw Error('A mentett javítások nem tölthetők be.');
  const rows=await response.json(),record=rows[0]?.content;
  if(record){if(record.source!==JSON.stringify(base)||!nkGameValid(record.config,base))throw Error('A mentett javítás az alapfeladat régebbi változatához tartozik.');nkGames[n]=record.config;}else nkGames[n]=JSON.parse(JSON.stringify(base));return true;
@@ -126,7 +126,7 @@ function nkRunGame(i,practiceOnly=false,loaded=false){
  const sceneIcon={train:'🚂',rescue:'🌳',factory:'🏭',bridge:'🌉',detective:'🔎',islands:'🏝️',tower:'🏰',lab:'🧪',workshop:'🧩'}[scene];
  const mission={train:'A betűrendvonat csak akkor indulhat el, ha a vagonok a magyar ábécé szerinti sorrendben állnak.',rescue:'Segíts Szócskának hazavezetni minden állatot! A nevük hangrendje mutatja az utat.',factory:'A szóelemgyár megrendeléseit helyesen összeépített szavakkal teljesítheted.',bridge:'Építs szótagokból hidat Szócskának!',detective:'Javítsd ki a hiányos szavakat, és gyűjts nyomokat!',islands:'Juttasd el a szavakat a megfelelő jelentésszigetre!',tower:'Építsd fel a nyelvi szintek tornyát!',lab:'Válogasd szét a mássalhangzókat a laborban!',workshop:'Oldd meg a nyelvtani küldetést!'}[scene];
  root.replaceChildren();const panel=e(root,'section','');panel.classList.add('nk-game-panel');nkColors(panel,nkTheme(i));
- b(panel,'← Lecke',()=>lesson(i));e(panel,'h2',sceneIcon+' '+cfg.title);const editor=e(panel,'details','');editor.className='nk-guided-options';e(editor,'summary','Tanári lehetőségek');if(nkTeacherBridge()){if(loaded)b(editor,'Játék szerkesztése',()=>nkOpenGameEditor(i,Math.max(0,cfg.rounds.indexOf(rounds[pos]||cfg.rounds[0]))));else e(editor,'p','A mentett változat nem tölthető be; a biztonságos szerkesztéshez próbáld újra.');}else b(editor,'Tanári belépés',()=>nkGameEditorLogin(i));
+ b(panel,'← Lecke',()=>lesson(i));e(panel,'h2',sceneIcon+' '+cfg.title);const editor=e(panel,'details','');editor.className='nk-guided-options';e(editor,'summary','Tanári lehetőségek');if(nkTeacherBridge()){if(loaded)b(editor,'Játék szerkesztése',()=>nkOpenGameEditor(i,Math.max(0,cfg.rounds.indexOf(rounds[pos]||cfg.rounds[0]))));else e(editor,'p','A mentett változat nem tölthető be; a biztonságos szerkesztéshez próbáld újra.');}else b(editor,'Tanári belépés',()=>nkGameEditorLogin(i));if(!loaded)e(panel,'small','A mentett javítások most nem érhetők el; az alapváltozat látható.');
  const story=e(panel,'div','');story.className='nk-game-story';nkMascot(story);const copy=e(story,'div','');e(copy,'strong','4. állomás · Szócska küldetése');e(copy,'p',cfg.rule);
  const tracker=practiceOnly?null:nkBeginLeave(panel);let pageLeaves=null;
  const cap=activeMode==='sni'?5:activeMode==='btmn'?8:12;
