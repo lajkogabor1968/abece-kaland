@@ -99,34 +99,101 @@ function attach() {
 
 function addResultsDashboard(){
   const host=document.querySelector('.teacher');
-  if(!host||document.querySelector('#nk5-dashboard'))return;
+  if(!teacher||!token||!host||document.querySelector('#nk5-dashboard'))return;
   const panel=el('details','');panel.id='nk5-dashboard';panel.style.cssText='margin:16px 0;padding:12px;border:1px solid #b9d2cf;border-radius:10px;background:white;color:#183e52';
-  panel.append(el('summary','NyelvtanKaland 5. – központi tanári eredménytábla'));
-  const explain=el('p','A beküldött tudáspróbák és játékok eredményei. A tanulók megadott neve vagy azonosítója nem hitelesített; ezek gyakorlási adatok, nem automatikus érdemjegyek. Az oldalelhagyások száma lap- és ablakváltást jelez, önmagában nem bizonyít szabálytalanságot. A régi beküldéseknél nem mért érték látható.');panel.append(explain);
+  panel.append(el('summary','Központi tanári eredménytábla – NyelvtanKaland 5.'));
+  panel.append(el('p','A tudáspróbák és játékok gyakorlási eredményei, nem hitelesített érdemjegyek. A tanulókat az osztály és a pontosan megadott név/azonosító párosa különíti el. A tudáspróba és a játék statisztikája külön készül. Az oldalelhagyás nem bizonyít szabálytalanságot; a nem mért érték nem nulla.'));
   const filters=el('div','');filters.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:end';
-  function field(label,type){const wrap=el('label',label+' '),input=el('input','');input.type=type;input.style.cssText='display:block;max-width:180px;padding:7px;border:1px solid #8da9a6;border-radius:6px;font:inherit';wrap.append(input);filters.append(wrap);return input;}
-  const cls=field('Osztály (pontos egyezés)','text'), pupil=field('Név / azonosító (pontos egyezés)','text'),lesson=field('Lecke száma (1–50)','number');lesson.min=1;lesson.max=50;
+  function field(label,type){const wrap=el('label',label+' '),input=el('input','');input.type=type;input.style.cssText='display:block;max-width:180px;width:100%;padding:7px;border:1px solid #8da9a6;border-radius:6px;font:inherit';wrap.append(input);filters.append(wrap);return input;}
+  const cls=field('Osztály (pontos)','text'),pupil=field('Név / azonosító (pontos)','text'),lesson=field('Lecke (1–50)','number');
+  cls.maxLength=20;pupil.maxLength=80;lesson.min=1;lesson.max=50;
+  const from=field('Kezdőnap','date'),to=field('Zárónap (beleértve)','date');
   const kind=el('select','');for(const [v,l] of [['','Minden tevékenység'],['tudasproba','Tudáspróba'],['jatek','Játék']]){const o=el('option',l);o.value=v;kind.append(o);}kind.setAttribute('aria-label','Tevékenység típusa');filters.append(kind);
-  const refresh=el('button','Szűrés / frissítés'),prev=el('button','Előző oldal'),next=el('button','Következő oldal'),csv=el('button','CSV – látható oldal');[refresh,prev,next,csv].forEach(x=>{x.type='button';filters.append(x);});panel.append(filters);
-  const message=el('p','Nyisd meg a táblát az adatok betöltéséhez.');message.setAttribute('role','status');panel.append(message);
-  const wrap=el('div','');wrap.style.overflowX='auto';panel.append(wrap);host.append(panel);
-  let offset=0,rows=[],busy=false,loaded=false;const size=100;prev.disabled=true;next.disabled=true;csv.disabled=true;
-  const display=r=>[new Date(r.submitted_at).toLocaleString('hu-HU'),r.student_label,r.class_label,r.lesson_no,r.activity==='jatek'?'Játék':'Tudáspróba',r.score,r.total,Math.round(100*r.score/r.total)+'%',r.page_leaves==null?'Nem mért':r.page_leaves];
-  async function load(reset=false){if(!teacher||!token||busy)return;if(reset)offset=0;if(lesson.value&&(Number(lesson.value)<1||Number(lesson.value)>50||!Number.isInteger(Number(lesson.value)))){message.textContent='1 és 50 közötti leckeszámot adj meg.';return;}busy=true;refresh.disabled=prev.disabled=next.disabled=csv.disabled=true;wrap.replaceChildren();message.textContent='Betöltés…';try{
-    const q=new URLSearchParams({select:'submitted_at,student_label,class_label,lesson_no,activity,score,total,page_leaves',order:'submitted_at.desc,id.desc',limit:String(size+1),offset:String(offset)});
-    if(cls.value.trim())q.set('class_label','eq.'+cls.value.trim());if(pupil.value.trim())q.set('student_label','eq.'+pupil.value.trim());if(lesson.value)q.set('lesson_no','eq.'+lesson.value);if(kind.value)q.set('activity','eq.'+kind.value);
-    const data=await call('/rest/v1/nyelvtan5_results?'+q);rows=data.slice(0,size);const table=el('table','');table.style.cssText='width:100%;border-collapse:collapse;text-align:left;font-size:15px';const labels=['Dátum','Név / azonosító','Osztály','Lecke','Tevékenység','Pont','Maximum','Százalék','Oldalelhagyások'];const head=el('thead',''),tr=el('tr','');labels.forEach(x=>{const th=el('th',x);th.scope='col';th.style.cssText='padding:8px;border-bottom:2px solid #b9d2cf';tr.append(th);});head.append(tr);table.append(head);const body=el('tbody','');for(const r of rows){const tr=el('tr','');display(r).forEach(x=>{const td=el('td',String(x));td.style.cssText='padding:8px;border-bottom:1px solid #dce7e5';tr.append(td);});body.append(tr);}table.append(body);wrap.append(table);message.textContent=rows.length?((offset+1)+'–'+(offset+rows.length)+'. beküldés; '+Math.round(rows.reduce((a,r)=>a+100*r.score/r.total,0)/rows.length)+'% az ezen az oldalon látható eredmények átlaga.'):'Nincs találat.';prev.disabled=offset===0;next.disabled=data.length<=size;csv.disabled=!rows.length;loaded=true;
-  }catch(err){rows=[];message.textContent='Nem sikerült betölteni: '+err.message+' Jelentkezz be újra, ha a munkamenet lejárt.';}finally{busy=false;refresh.disabled=false;}}
-  refresh.onclick=()=>load(true);prev.onclick=()=>{offset=Math.max(0,offset-size);load();};next.onclick=()=>{offset+=size;load();};
+  const refresh=el('button','Szűrés / frissítés'),prev=el('button','Előző oldal'),next=el('button','Következő oldal'),csv=el('button','CSV – látható oldal'),fullCsv=el('button','CSV – összes szűrt eredmény');
+  [refresh,prev,next,csv,fullCsv].forEach(x=>{x.type='button';filters.append(x);});panel.append(filters);
+  const message=el('p','Nyisd meg a táblát az adatok betöltéséhez.');message.setAttribute('role','status');message.setAttribute('aria-live','polite');panel.append(message);
+  const stats=el('div',''),wrap=el('div','');wrap.style.overflowX='auto';panel.append(stats,el('h3','Beküldések'),wrap);host.append(panel);
+  let offset=0,rows=[],busy=false,loaded=false,applied=null,asof=null,total=0;const size=100;
+  const labels=['Dátum','Név / azonosító','Osztály','Lecke','Tevékenység','Pont','Maximum','Százalék','Oldalelhagyások'];
+  const fmt=n=>n==null?'Nem mért':Number(n).toLocaleString('hu-HU',{maximumFractionDigits:2});
+  const pct=n=>n==null?'–':fmt(n)+'%';
+  const activity=a=>a==='jatek'?'Játék':'Tudáspróba';
+  const display=r=>[new Date(r.submitted_at).toLocaleString('hu-HU',{timeZone:'Europe/Budapest'}),r.student_label,r.class_label,r.lesson_no,activity(r.activity),r.score,r.total,pct(100*r.score/r.total),r.page_leaves==null?'Nem mért':r.page_leaves];
+  function controls(){refresh.disabled=busy;prev.disabled=busy||offset===0||!loaded;next.disabled=busy||!loaded||offset+size>=total;csv.disabled=fullCsv.disabled=busy||!loaded||!rows.length;[cls,pupil,lesson,from,to,kind].forEach(x=>x.disabled=busy);}
+  function table(parent,headers,data){
+    const scroll=el('div','');scroll.style.overflowX='auto';const t=el('table','');t.style.cssText='width:100%;border-collapse:collapse;text-align:left;font-size:15px';const head=el('thead',''),tr=el('tr','');
+    headers.forEach(v=>{const h=el('th',v);h.scope='col';h.style.cssText='padding:8px;border-bottom:2px solid #b9d2cf';tr.append(h);});head.append(tr);t.append(head);
+    const body=el('tbody','');for(const row of data){const tr=el('tr','');row.forEach(v=>{const td=el('td',String(v));td.style.cssText='padding:8px;border-bottom:1px solid #dce7e5';tr.append(td);});body.append(tr);}t.append(body);scroll.append(t);parent.append(scroll);
+  }
+  function drawStats(d){
+    stats.replaceChildren();
+    stats.append(el('h3','Összesített eredmények – teljes szűrt adathalmaz'),el('p',fmt(d.total)+' beküldés · '+fmt(d.measured)+' mért oldalelhagyás-adatú próba · összes oldalelhagyás: '+fmt(d.leaves)+' · mért próbánként: '+fmt(d.measured?Number(d.leaves)/Number(d.measured):null)));
+    if(!d.total)return;
+    stats.append(el('h3','Osztályonkénti statisztika'),el('p','Az osztályátlag a tanulók saját átlagainak átlaga, így a többször gyakorló tanuló nem kap nagyobb súlyt. Névsor nélkül a kitöltési arány nem számítható. Az eltérő nehézségű változatok a régi rekordokból nem különíthetők el.'));
+    table(stats,['Osztály','Tevékenység','Egyedi név/azonosító','Beküldés','Átlag','Medián','Minimum','Maximum','Mért próba','Elhagyás összesen'],d.classes.map(c=>[c.class_label,activity(c.activity),fmt(c.pupils),fmt(c.attempts),pct(c.average),pct(c.median),pct(c.minimum),pct(c.maximum),fmt(c.measured),fmt(c.leaves)]));
+    stats.append(el('h3','Tanulónkénti statisztika'),el('p','Az első és utolsó százalék a szűrt időszakban; különböző leckék esetén ez nem közvetlen fejlődési bizonyíték. Válassz egyetlen leckét az összehasonlításhoz.'));
+    table(stats,['Osztály','Név / azonosító','Tevékenység','Próbák','Átlag','Legjobb','Első','Utolsó','Mért próba','Elhagyás összesen','Elhagyás / mért próba'],d.students.map(s=>[s.class_label,s.student_label,activity(s.activity),fmt(s.attempts),pct(s.average),pct(s.maximum),pct(s.first),pct(s.latest),fmt(s.measured),fmt(s.leaves),fmt(s.leave_average)]));
+    if(d.student_count>d.students.length||d.class_count>d.classes.length)stats.append(el('p','A csoportlista legfeljebb 500 sort mutat típusonként. Szűkítsd a szűrést; az összesített beküldésszám ettől még teljes.'));
+  }
+  function readFilters(){
+    if(lesson.value&&(!Number.isInteger(Number(lesson.value))||Number(lesson.value)<1||Number(lesson.value)>50))throw Error('1 és 50 közötti egész leckeszámot adj meg.');
+    if(from.value&&to.value&&from.value>to.value)throw Error('A kezdőnap nem lehet későbbi a zárónapnál.');
+    return {p_class:cls.value.trim()||null,p_student:pupil.value.trim()||null,p_lesson:lesson.value?Number(lesson.value):null,p_activity:kind.value||null,p_from:from.value||null,p_to:to.value||null};
+  }
+  async function query(filters,off,limit,snapshot,includeStats){
+    if(!teacher||!token)throw Error('Tanári bejelentkezés szükséges.');
+    return call('/rest/v1/rpc/nk5_teacher_dashboard',{method:'POST',body:JSON.stringify({...filters,p_offset:off,p_limit:limit,p_asof:snapshot,p_stats:includeStats})});
+  }
+  async function load(reset=false,target=0){
+    if(!teacher||!token||busy)return;
+    let f=applied;
+    if(reset){try{f=readFilters();}catch(e){message.textContent=e.message;return;}}
+    if(!f)return;
+    busy=true;controls();message.textContent='Betöltés…';
+    try{
+      const d=await query(f,reset?0:target,size,reset?null:asof,true);
+      if(!teacher||!token)return;
+      if(!reset&&Number(d.total)!==total){message.textContent='Az adatok megváltoztak. Frissítsd a szűrést a következő lap előtt.';return;}
+      applied=f;asof=d.asof;total=Number(d.total);offset=reset?0:target;rows=d.rows;loaded=true;
+      drawStats(d);wrap.replaceChildren();table(wrap,labels,rows.map(display));
+      message.textContent=rows.length?fmt(offset+1)+'–'+fmt(offset+rows.length)+' / '+fmt(total)+' beküldés. Szűrés időpontja: '+new Date(asof).toLocaleString('hu-HU',{timeZone:'Europe/Budapest'}):'Nincs találat.';
+    }catch(err){rows=[];loaded=false;applied=null;asof=null;stats.replaceChildren();wrap.replaceChildren();message.textContent='Nem sikerült betölteni: '+err.message+' Jelentkezz be újra, ha a munkamenet lejárt.';}
+    finally{busy=false;controls();}
+  }
   function safeCsv(v){let s=String(v);if(/^[\s]*[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
-  csv.onclick=()=>{if(!teacher||!rows.length)return;const lines=[['Dátum','Név / azonosító','Osztály','Lecke','Tevékenység','Pont','Maximum','Százalék','Oldalelhagyások'],...rows.map(display)];const blob=new Blob(['\uFEFF'+lines.map(r=>r.map(safeCsv).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),a=el('a','');a.href=url;a.download='nyelvtankaland-5-eredmenyek.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+  function exportRows(data,name){
+    if(!teacher||!token)return;
+    const blob=new Blob(['\uFEFF'+[labels,...data.map(display)].map(r=>r.map(safeCsv).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob),a=el('a','');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  refresh.onclick=()=>load(true);prev.onclick=()=>load(false,Math.max(0,offset-size));next.onclick=()=>load(false,offset+size);
+  csv.onclick=()=>{if(!busy&&loaded)exportRows(rows,'nyelvtankaland-5-eredmenyek-oldal.csv');};
+  fullCsv.onclick=async()=>{
+    if(!teacher||!token||busy||!loaded||!applied)return;
+    if(!confirm('A teljes szűrt eredménylista tanulói adatokat tartalmazhat. Csak zárt intézményi tárolóba mentsd. Folytatod?'))return;
+    if(total>20000){message.textContent='A biztonságos export felső határa 20 000 sor. Szűkítsd az időszakot.';return;}
+    busy=true;controls();const all=[],ids=new Set();
+    try{
+      for(let off=0;off<total;off+=500){
+        message.textContent='Export előkészítése: '+fmt(off)+' / '+fmt(total);
+        const d=await query(applied,off,500,asof,false);
+        if(Number(d.total)!==total||d.rows.length!==Math.min(500,total-off))throw Error('A találati halmaz megváltozott. Frissítsd a szűrést.');
+        for(const row of d.rows){if(ids.has(row.id))throw Error('Ismétlődő rekord – frissítsd a szűrést.');ids.add(row.id);all.push(row);}
+      }
+      if(all.length!==total)throw Error('Hiányos export.');
+      exportRows(all,'nyelvtankaland-5-eredmenyek-teljes.csv');message.textContent='Export előkészítve: '+fmt(all.length)+' sor.';
+    }catch(err){message.textContent='Export nem készült: '+err.message;}finally{all.length=0;ids.clear();busy=false;controls();}
+  };
+  controls();
   panel.ontoggle=()=>{if(panel.open&&!loaded)load(true);};
+  window.addEventListener('pagehide',e=>{if(e.persisted){rows=[];loaded=false;stats.replaceChildren();wrap.replaceChildren();}});
+  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
   if(sessionStorage.getItem('nk5-open-results')==='1'){sessionStorage.removeItem('nk5-open-results');panel.open=true;load(true);}
 }
 
 async function start() {
   try {await auth();} catch(e){status.textContent=e.message;}
-  const resultLink=el('button','NyelvtanKaland 5. – tanári eredmények');resultLink.type='button';document.querySelector('.teacher').append(resultLink);
+  const resultLink=el('button','Központi tanári eredménytábla');resultLink.type='button';document.querySelector('.teacher').append(resultLink);
   resultLink.onclick=()=>{if(teacher){const panel=document.querySelector('#nk5-dashboard');if(panel){panel.open=true;panel.scrollIntoView({block:'start'});}}else{sessionStorage.setItem('nk5-open-results','1');signIn().catch(e=>status.textContent=e.message);}};
   if(teacher)addResultsDashboard();
   if(!allowed)return;
