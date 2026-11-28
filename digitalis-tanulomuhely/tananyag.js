@@ -191,11 +191,29 @@ function addResultsDashboard(){
   if(sessionStorage.getItem('nk5-open-results')==='1'){sessionStorage.removeItem('nk5-open-results');panel.open=true;load(true);}
 }
 
+
+function addMissionBuilder(){
+ const host=document.querySelector('.teacher');if(!teacher||!token||!host||document.querySelector('#nk5-missions'))return;
+ const topics=["Tanulni tanulunk","A jelek világa","Az emberi kommunikáció fogalma, tényezői és célja","A kommunikáció nem nyelvi jelei","A kommunikációs kapcsolat","Beszélgetés, telefonálás, témaválasztás","Kommunikáció szóban és írásban","Ellenőrizd a tudásodat!","A magyar helyesírás jellemzői","Az írás kialakulása","A magyar ábécé és a betűrend","Szótagolás és elválasztás","A levél és a keltezés","A kiejtés szerinti írásmód","Szövegszerkesztés","Szóelemző írásmód","A hagyomány szerinti és az egyszerűsítő írásmód","Nyelvhelyesség, szövegalkotás/szövegértés","Összefoglalás","Szólások, közmondások, szállóigék","Könyvtárhasználat","Gyakoroljunk!","Az elbeszélés","A leírás","Összefoglalás","A nyelvi szintek","Hangképzés, fonéma","A magánhangzók","Magánhangzótörvények","Mássalhangzók","Szövegértés, szövegalkotás","Mássalhangzók hangkapcsolódási szabályszerűségei I.","Mássalhangzók hangkapcsolódási szabályszerűségei II.","Mássalhangzók hangkapcsolódási szabályszerűségei III.","Részösszefoglalás I.","Részösszefoglalás II.","A szavak szerkezete","A toldalékok: a képzők","A toldalékok: a jelek és a ragok","Összefoglalás","Hangalak és jelentés","Egyjelentésű és többjelentésű szavak","Az azonos alakú és hasonló alakú szavak","A rokon értelmű és ellentétes jelentésű szavak","Hangutánzó és hangulatfestő szavak","Jelentésmező","Szövegalkotás és összefoglalás","Ellenőrizd a tudásodat!","Összefoglalás – rendszerezés I.","Összefoglalás – rendszerezés II."],games={"3":"Kommunikációs üzenetküldő műhely","11":"Betűrendvonat","20":"Közmondásépítő","28":"Magánhangzó-válogató","29":"Hangrendi állatmentők","37":"Szóelemgyár – összetett szavak","39":"Toldalékvonat","43":"Jelentésnyomozó","44":"Jelentéspárosító","45":"Hangutánzó és hangulatfestő szóvadász"};
+ const panel=el('details','');panel.id='nk5-missions';panel.style.cssText='margin:16px 0;padding:14px;border:1px solid #b9d2cf;border-radius:12px;background:white;color:#183e52';
+ panel.append(el('summary','Szócska – tanári küldetéskiosztás'),el('p','Válaszd ki a leckét, a tevékenységet és az ajánlott tanulási utat. Az elkészült linket oszd meg a gyerekekkel, például a KRÉTA-ban vagy az osztály csoportjában. Nem kér belépést vagy külön kódot.'));
+ const form=el('div','');form.style.cssText='display:grid;gap:10px;max-width:650px';
+ function select(label,opts){const wrap=el('label',label),x=el('select','');x.style.cssText='display:block;width:100%;padding:9px;font:inherit;border-radius:8px;border:1px solid #9cb6b4';for(const [value,name] of opts){const o=el('option',name);o.value=String(value);x.append(o);}wrap.append(x);form.append(wrap);return x;}
+ const type=select('Küldetés típusa',[['jatek','Nyelvtani játék'],['tudasproba','Önálló tudáspróba'],['tanulas','Tanulás és gyakorlás']]);
+ const lesson=select('Lecke / játék',[]);const mode=select('Ajánlott tanulási út',[['normal','Mester – önálló'],['btmn','Kalandor – támogatott'],['sni','Felfedező – segített']]);
+ const out=el('input','');out.type='url';out.readOnly=true;out.setAttribute('aria-label','Megosztható küldetéslink');out.style.cssText='width:100%;padding:10px;border:1px solid #9cb6b4;border-radius:8px;font:inherit';form.append(out);
+ const actions=el('div',''),copy=el('button','Link másolása'),preview=el('a','Küldetés előnézete');copy.type='button';preview.target='_blank';preview.rel='noopener noreferrer';preview.style.marginLeft='12px';actions.append(copy,preview);form.append(actions);
+ const status=el('p','');status.setAttribute('role','status');form.append(status);panel.append(form,el('p','A link nem tartalmaz tanulói nevet vagy osztályt. A tanulási út ajánlás, a gyermek módosíthatja. A beküldött játék és tudáspróba a meglévő eredménytáblában jelenik meg a leckeszám és tevékenységtípus alapján. Ez még nem névsoros vagy egyedi feladata­zonosítós kiosztás; egy link önmagában nem igazolja, hogy minden tanuló teljesítette a küldetést.'));host.append(panel);
+ function update(){const u=new URL('nyelvtankaland-5.html',location.href);u.searchParams.set('lecke',lesson.value);u.searchParams.set('kuldetes',type.value);u.searchParams.set('mode',mode.value);out.value=u.href;preview.href=u.href;status.textContent='';}
+ function rebuild(){const last=lesson.value;lesson.replaceChildren();topics.forEach((t,i)=>{const n=i+1;if(type.value==='jatek'&&!games[n])return;const o=el('option',n+'. '+(type.value==='jatek'?games[n]:t));o.value=String(n);lesson.append(o);});if([...lesson.options].some(o=>o.value===last))lesson.value=last;update();}
+ type.onchange=rebuild;lesson.onchange=mode.onchange=update;copy.onclick=async()=>{try{await navigator.clipboard.writeText(out.value);status.textContent='A küldetéslink másolva.';}catch(e){out.focus();out.select();status.textContent='A link kijelölve; másold a vágólapra.';}};rebuild();
+}
+
 async function start() {
   try {await auth();} catch(e){status.textContent=e.message;}
   const resultLink=el('button','Központi tanári eredménytábla');resultLink.type='button';document.querySelector('.teacher').append(resultLink);
   resultLink.onclick=()=>{if(teacher){const panel=document.querySelector('#nk5-dashboard');if(panel){panel.open=true;panel.scrollIntoView({block:'start'});}}else{sessionStorage.setItem('nk5-open-results','1');signIn().catch(e=>status.textContent=e.message);}};
-  if(teacher)addResultsDashboard();
+  if(teacher){addResultsDashboard();addMissionBuilder();}
   if(!allowed)return;
   const panel=document.querySelector('.teacher');
   document.querySelector('main').prepend(panel);
