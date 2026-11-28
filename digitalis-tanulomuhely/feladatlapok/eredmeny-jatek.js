@@ -109,8 +109,8 @@ function nkRealGame(i,practiceOnly=false){
   function attempt(ok,correct){
    if(finished)return false;
    if(!attempted){attempted=true;firstCorrect=ok;if(!ok)wrong.push([q[0],correct]);}
-   if(!ok){mistakes++;status.textContent=scene==='rescue'?'🦊 Figyeld meg a szó magánhangzóit, majd válassz újra!':scene==='train'?'🦊 Nézd át a betűrendet! A vagonokat újra rendezheted.':'🦊 Ellenőrizd a megoldást, és próbáld újra!';if(mistakes>=2)status.textContent+=' Segítség: '+correct;status.className='nk-game-status retry';return false;}
-   finished=true;outcomes.push(firstCorrect);activeChoice=null;targetButtons.forEach(x=>x.disabled=true);
+   if(!ok){if(typeof nkFoxReact==='function')nkFoxReact(panel,'thinking','Gondold át újra a megoldást!');mistakes++;status.textContent=scene==='rescue'?'🦊 Figyeld meg a szó magánhangzóit, majd válassz újra!':scene==='train'?'🦊 Nézd át a betűrendet! A vagonokat újra rendezheted.':'🦊 Ellenőrizd a megoldást, és próbáld újra!';if(mistakes>=2)status.textContent+=' Segítség: '+correct;status.className='nk-game-status retry';return false;}
+   finished=true;if(typeof nkFoxReact==='function')nkFoxReact(panel,'happy','Sikerült!');outcomes.push(firstCorrect);activeChoice=null;targetButtons.forEach(x=>x.disabled=true);
    status.textContent='✓ '+(firstCorrect?'Elsőre sikerült! ':'Kijavítottad, ügyes vagy! ')+correct;status.className='nk-game-status success';
    bar.value=pos+1;tally.textContent=(pos+1)+' / '+rounds.length+' teljesített küldetés';
    if(pos===rounds.length-1&&tracker)pageLeaves=tracker.stop();
