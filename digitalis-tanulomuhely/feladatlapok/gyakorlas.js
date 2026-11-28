@@ -170,6 +170,7 @@ function eredmeny(){
   tartalom.append(elem('h3','Eredmény: '+szazalek+'%'),elem('p',sor.length+' feladatból '+pont+' helyes válasz.'));
   if(hibak.length) gomb(muvelet,'A hibás feladatok újra',()=>indit(szam,hibak));
   gomb(muvelet,'Újragyakorlás',()=>indit(szam),'fo');
+  if(typeof nkTrail==='function')nkTrail(muvelet,lecke,'practice',szazalek);
   if(alkotas[szam]) {
     const [kerdes,minta,szempont]=alkotas[szam];
     const panel=elem('details'), body=elem('div');
